@@ -1,6 +1,7 @@
 node_modules
 
 # Output
+.cloudflare
 .output
 .vercel
 .netlify
@@ -17,6 +18,10 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.test
+
+.dev.vars
+
+seed_prod.sql
 
 # Vite
 vite.config.js.timestamp-*

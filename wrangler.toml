@@ -1,0 +1,18 @@
+name = "church-vote"
+main = "./.cloudflare/worker.js"
+compatibility_date = "2024-01-01"
+
+[assets]
+directory = "./.cloudflare/public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "church-vote-db"
+database_id = "8723ab4e-0a9e-47d1-be08-e4dbc538d5cb"
+migrations_dir = "./src/lib/db/migrations"
+
+[vars]
+ENVIRONMENT = "production"
+
+# JWT_SECRET은 Cloudflare Dashboard에서 Secrets로 설정

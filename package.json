@@ -11,16 +11,25 @@
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "format": "prettier --write .",
-        "lint": "prettier --check . && eslint ."
+        "lint": "prettier --check . && eslint .",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate:local": "wrangler d1 migrations apply church-vote-db --local",
+        "db:migrate:prod": "wrangler d1 migrations apply church-vote-db --remote",
+        "db:seed:local": "wrangler d1 execute church-vote-db --local --file=./seed.sql",
+        "db:seed:prod": "wrangler d1 execute church-vote-db --remote --file=./seed.sql",
+        "db:studio": "drizzle-kit studio --config=drizzle.config.local.ts"
     },
     "devDependencies": {
+        "@cloudflare/workers-types": "^4.20260307.1",
         "@eslint/compat": "^1.4.0",
         "@eslint/js": "^9.38.0",
         "@sveltejs/adapter-cloudflare": "^7.2.4",
         "@sveltejs/kit": "^2.47.1",
         "@sveltejs/vite-plugin-svelte": "^6.2.1",
         "@tailwindcss/vite": "^4.1.14",
+        "@types/better-sqlite3": "^7.6.12",
         "@types/node": "^22",
+        "better-sqlite3": "^11.8.1",
         "eslint": "^9.38.0",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-svelte": "^3.12.4",
@@ -31,14 +40,25 @@
         "svelte": "^5.41.0",
         "svelte-check": "^4.3.3",
         "tailwindcss": "^4.1.14",
+        "tsx": "^4.19.3",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.46.1",
-        "vite": "^7.1.10"
+        "vite": "^7.1.10",
+        "wrangler": "^4.71.0"
     },
     "pnpm": {
         "onlyBuiltDependencies": [
             "esbuild",
-            "@tailwindcss/oxide"
+            "@tailwindcss/oxide",
+            "better-sqlite3"
         ]
+    },
+    "dependencies": {
+        "@oslojs/crypto": "^1.0.1",
+        "@oslojs/encoding": "^1.1.0",
+        "@paralleldrive/cuid2": "^3.3.0",
+        "drizzle-kit": "^0.31.9",
+        "drizzle-orm": "^0.45.1",
+        "jose": "^6.2.0"
     }
 }
