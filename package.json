@@ -16,7 +16,7 @@
         "db:migrate:local": "wrangler d1 migrations apply church-vote-db --local",
         "db:migrate:prod": "wrangler d1 migrations apply church-vote-db --remote",
         "db:seed:local": "wrangler d1 execute church-vote-db --local --file=./seed.sql",
-        "db:seed:prod": "wrangler d1 execute church-vote-db --remote --file=./seed.sql",
+        "db:seed:prod": "wrangler d1 execute church-vote-db --remote --file=./seed_prod.sql",
         "db:studio": "drizzle-kit studio --config=drizzle.config.local.ts"
     },
     "devDependencies": {
