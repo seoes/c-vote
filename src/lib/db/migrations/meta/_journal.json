@@ -15,6 +15,13 @@
       "when": 1772893345113,
       "tag": "0001_narrow_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775707788313,
+      "tag": "0002_clean_nocturne",
+      "breakpoints": true
     }
   ]
 }

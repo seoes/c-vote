@@ -9,6 +9,7 @@
     let position = $state<Position>(POSITIONS[0]);
     let password = $state("");
     let passwordConfirm = $state("");
+    let securityAnswer = $state("");
 
     let error = $state("");
     let success = $state(false);
@@ -62,6 +63,11 @@
             loading = false;
             return;
         }
+        if (!securityAnswer.trim()) {
+            error = "성경인물 답변을 입력해주세요.";
+            loading = false;
+            return;
+        }
 
         // API 호출
         try {
@@ -75,6 +81,7 @@
                     church: church.trim(),
                     sigchal,
                     position,
+                    securityAnswer: securityAnswer.trim(),
                 }),
             });
 
@@ -192,6 +199,18 @@
                     bind:value={passwordConfirm}
                     autocomplete="new-password"
                 />
+            </div>
+
+            <div class="form-group">
+                <label class="label" for="securityAnswer">가장 좋아하는 성경인물은? *</label>
+                <input
+                    type="text"
+                    id="securityAnswer"
+                    class="input input-lg"
+                    placeholder="예: 다윗, 모세, 베드로"
+                    bind:value={securityAnswer}
+                />
+                <p class="text-sm text-gray-500 mt-1">비밀번호 찾기 시 본인 확인용으로 사용됩니다</p>
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg btn-full mt-6" disabled={loading}>

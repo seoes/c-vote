@@ -136,6 +136,12 @@
             {/if}
         </button>
 
+        <div class="text-center mt-4">
+            <a href="/find-password" class="text-gray-500 text-sm hover:text-primary-600 hover:underline">
+                비밀번호를 잊으셨나요?
+            </a>
+        </div>
+
         <div class="text-center mt-6">
             <span class="text-gray-600">계정이 없으신가요?</span>
             <a href="/register" class="text-primary-600 font-semibold ml-2 hover:underline">회원가입</a>

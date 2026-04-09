@@ -25,6 +25,7 @@ export const members = sqliteTable(
         church: text("church").notNull(),
         sigchal: text("sigchal", { enum: SIGCHALS }).notNull(),
         position: text("position", { enum: POSITIONS }), // 관리자는 null, 일반 회원은 목사/장로
+        securityAnswer: text("security_answer"), // 비밀번호 찾기용 보안 질문 답변
         status: text("status", { enum: ["pending", "approved", "rejected"] })
             .notNull()
             .default("pending"),

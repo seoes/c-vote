@@ -15,11 +15,15 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
     const body = await request.json();
 
-    const { name, phone, password, church, sigchal, position } = body;
+    const { name, phone, password, church, sigchal, position, securityAnswer } = body;
 
     // 유효성 검사
     if (!name?.trim() || !phone?.trim() || !password || !church?.trim() || !sigchal || !position) {
         throw error(400, "All fields are required");
+    }
+
+    if (!securityAnswer?.trim()) {
+        throw error(400, "Security answer is required");
     }
 
     // 전화번호 형식 검증 (010-0000-0000)
@@ -47,6 +51,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
             church: church.trim(),
             sigchal,
             position,
+            securityAnswer: securityAnswer.trim(),
             status: "pending",
             isAdmin: false,
         });
