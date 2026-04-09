@@ -1,10 +1,12 @@
 <script lang="ts">
     import { SIGCHALS, POSITIONS, type Sigchal, type Position } from "$lib/types";
     import { goto } from "$app/navigation";
+    import { REGIONS } from "$lib/region";
 
     let name = $state("");
     let phone = $state("");
     let church = $state("");
+    let region = $state(REGIONS[0]);
     let sigchal = $state<Sigchal>(SIGCHALS[0]);
     let position = $state<Position>(POSITIONS[0]);
     let password = $state("");
@@ -79,6 +81,7 @@
                     phone,
                     password,
                     church: church.trim(),
+                    region,
                     sigchal,
                     position,
                     securityAnswer: securityAnswer.trim(),
@@ -157,6 +160,15 @@
             <div class="form-group">
                 <label class="label" for="church">소속교회 *</label>
                 <input type="text" id="church" class="input input-lg" placeholder="OO교회" bind:value={church} />
+            </div>
+
+            <div class="form-group">
+                <label class="label" for="region">노회</label>
+                <select id="region" class="select" bind:value={region}>
+                    {#each REGIONS as r (r)}
+                        <option value={r}>{r}</option>
+                    {/each}
+                </select>
             </div>
 
             <div class="form-group">

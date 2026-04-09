@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
     const body = await request.json();
 
-    const { name, phone, password, church, sigchal, position, securityAnswer } = body;
+    const { name, phone, password, church, region, sigchal, position, securityAnswer } = body;
 
     // 유효성 검사
     if (!name?.trim() || !phone?.trim() || !password || !church?.trim() || !sigchal || !position) {
@@ -49,6 +49,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
             phone,
             passwordHash,
             church: church.trim(),
+            region,
             sigchal,
             position,
             securityAnswer: securityAnswer.trim(),

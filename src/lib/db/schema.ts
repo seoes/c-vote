@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
-
+import { REGIONS } from "../../lib/region";
 // ============================================
 // 시찰 및 직분 상수
 // ============================================
@@ -23,6 +23,7 @@ export const members = sqliteTable(
         phone: text("phone").notNull(),
         passwordHash: text("password_hash").notNull(),
         church: text("church").notNull(),
+        region: text("region", { enum: REGIONS as typeof REGIONS }).notNull(),
         sigchal: text("sigchal", { enum: SIGCHALS }).notNull(),
         position: text("position", { enum: POSITIONS }), // 관리자는 null, 일반 회원은 목사/장로
         securityAnswer: text("security_answer"), // 비밀번호 찾기용 보안 질문 답변

@@ -1,0 +1,1 @@
+ALTER TABLE `members` ADD COLUMN `region` TEXT NOT NULL DEFAULT '경북서부노회';
