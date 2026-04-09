@@ -6,7 +6,7 @@ import { eq, desc, or, and, like } from "drizzle-orm";
 export const GET: RequestHandler = async ({ url, platform, locals }) => {
     // 관리자 권한 확인
     if (!locals.user?.isAdmin) {
-        throw error(403, "Admin access required");
+        throw error(403, "관리자 권한이 필요합니다.");
     }
 
     const env = platform?.env;

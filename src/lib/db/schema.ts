@@ -31,6 +31,7 @@ export const members = sqliteTable(
             .notNull()
             .default("pending"),
         isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+        canVote: integer("can_vote", { mode: "boolean" }).notNull().default(true),
         createdAt: integer("created_at", { mode: "timestamp" })
             .notNull()
             .$defaultFn(() => new Date()),
@@ -52,6 +53,7 @@ export const votes = sqliteTable(
         description: text("description"),
         voteType: text("vote_type", { enum: ["pastor", "elder", "general"] }).notNull(),
         maxSelections: integer("max_selections").notNull().default(1),
+        resultDisplayCount: integer("result_display_count").notNull().default(10),
         pin: text("pin").notNull(), // 4자리 PIN
         endTime: integer("end_time", { mode: "timestamp" }).notNull(),
         status: text("status", { enum: ["active", "ended"] })

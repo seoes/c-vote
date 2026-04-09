@@ -14,6 +14,11 @@ export const load: PageServerLoad = async ({ locals, params, fetch }) => {
     }
     const vote = await voteRes.json();
 
+    // 이미 투표했으면 결과 페이지로 리다이렉트
+    if (vote.userVoted) {
+        throw redirect(302, `/vote/${params.id}/result`);
+    }
+
     return {
         user: locals.user,
         vote,

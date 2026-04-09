@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm";
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
     if (!locals.user) {
-        throw error(401, "Authentication required");
+        throw error(401, "로그인이 필요합니다.");
     }
 
     const env = platform?.env;
@@ -20,36 +20,19 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
     const voteResult = await db.select().from(votes).where(eq(votes.id, voteId)).limit(1);
 
     if (voteResult.length === 0) {
-        throw error(404, "Vote not found");
+        throw error(404, "투표를 찾을 수 없습니다.");
     }
 
     const vote = voteResult[0];
 
-    // 후보 목록 조회 (목사/장로 선출은 관리자 제외한 승인 회원, 일반의제는 candidates 테이블)
-    let candidateList: { id: string; name: string; church: string | null }[] = [];
+    // 후보 목록 조회 - 모든 투표 유형에서 candidates 테이블에서 조회
+    const allCandidates = await db.select().from(candidates).where(eq(candidates.voteId, voteId));
 
-    if (vote.voteType === "pastor" || vote.voteType === "elder") {
-        // 승인된 회원 중 관리자 제외
-        const allMembers = await db
-            .select({
-                id: members.id,
-                name: members.name,
-                church: members.church,
-            })
-            .from(members)
-            .where(and(eq(members.status, "approved"), eq(members.isAdmin, false)));
-
-        candidateList = allMembers;
-    } else {
-        // 일반의제: candidates 테이블에서 조회
-        const allCandidates = await db.select().from(candidates).where(eq(candidates.voteId, voteId));
-
-        candidateList = allCandidates.map((c) => ({
-            id: c.id,
-            name: c.name,
-            church: c.church,
-        }));
-    }
+    const candidateList = allCandidates.map((c) => ({
+        id: c.memberId || c.id, // 목사/장로 선출은 memberId, 일반의제는 candidate id
+        name: c.name,
+        church: c.church,
+    }));
 
     // 참여자 수
     const records = await db.select().from(voteRecords).where(eq(voteRecords.voteId, voteId));

@@ -10,6 +10,7 @@
     let description = $state("");
     let voteType = $state<VoteType>("general");
     let maxSelections = $state(5);
+    let resultDisplayCount = $state(10);
     let pin = $state("");
     let endHours = $state(2);
     let selectedMemberIds = $state<string[]>([]);
@@ -19,26 +20,40 @@
     let loading = $state(false);
     let step = $state<1 | 2 | 3>(1);
 
-    // 투표 유형에 따른 후보자 결정
-    const isAutoCandidate = $derived(voteType === "pastor" || voteType === "elder");
+    // 투표 유형에 따른 후보자 필터링
+    const candidateMembers = $derived(() => {
+        // canVote가 true인 회원만 후보 목록에 포함
+        let list = data.approvedMembers.filter((m: any) => m.canVote !== false);
+
+        if (voteType === "pastor") {
+            // 목사 선출: 목사 직분인 회원만
+            list = list.filter((m: any) => m.position === "목사");
+        } else if (voteType === "elder") {
+            // 장로 선출: 장로 직분인 회원만
+            list = list.filter((m: any) => m.position === "장로");
+        }
+        // general: 모든 회원
+
+        return list;
+    });
 
     // 검색 필터링된 회원 목록
     const filteredMembers = $derived(() => {
-        if (!searchQuery.trim()) return data.approvedMembers;
+        const candidates = candidateMembers();
+        if (!searchQuery.trim()) return candidates;
         const query = searchQuery.trim().toLowerCase();
-        return data.approvedMembers.filter(
+        return candidates.filter(
             (m: any) => m.name.toLowerCase().includes(query) || m.church.toLowerCase().includes(query),
         );
     });
 
     // 선택된 회원 목록
-    const selectedMembers = $derived(data.approvedMembers.filter((m: any) => selectedMemberIds.includes(m.id)));
+    const selectedMembers = $derived(candidateMembers().filter((m: any) => selectedMemberIds.includes(m.id)));
 
-    // 투표 유형 변경 시 처리
+    // 투표 유형 변경 시 선택된 후보 초기화
     $effect(() => {
-        if (voteType === "pastor" || voteType === "elder") {
-            // 목사/장로 선출은 1인 5표
-            maxSelections = 5;
+        if (voteType) {
+            selectedMemberIds = [];
         }
     });
 
@@ -51,7 +66,7 @@
     }
 
     function selectAllMembers() {
-        selectedMemberIds = data.approvedMembers.map((m: any) => m.id);
+        selectedMemberIds = candidateMembers().map((m: any) => m.id);
     }
 
     function deselectAllMembers() {
@@ -84,12 +99,12 @@
     function goToStep3() {
         error = "";
 
-        // 일반의제는 후보 선택 필요
-        if (!isAutoCandidate && selectedMemberIds.length === 0) {
+        // 모든 투표 유형에서 후보 선택 필요
+        if (selectedMemberIds.length === 0) {
             error = "최소 1명 이상의 후보를 선택해주세요.";
             return;
         }
-        if (!isAutoCandidate && selectedMemberIds.length < maxSelections) {
+        if (selectedMemberIds.length < maxSelections) {
             error = `최대 선택 가능 수(${maxSelections}명)보다 후보가 적습니다.`;
             return;
         }
@@ -110,17 +125,17 @@
                 description: description.trim(),
                 voteType,
                 maxSelections,
+                resultDisplayCount,
                 pin,
                 endTime: endTime.toISOString(),
             };
 
-            // 일반의제인 경우 후보자 목록 추가
-            if (!isAutoCandidate) {
-                body.candidates = selectedMembers.map((m: any) => ({
-                    name: m.name,
-                    church: m.church,
-                }));
-            }
+            // 모든 투표 유형에서 후보자 목록 추가
+            body.candidates = selectedMembers.map((m: any) => ({
+                id: m.id,
+                name: m.name,
+                church: m.church,
+            }));
 
             const res = await fetch("/api/votes", {
                 method: "POST",
@@ -219,11 +234,11 @@
                 </select>
                 <p class="text-sm text-gray-500 mt-1">
                     {#if voteType === "pastor"}
-                        목사선출: 모든 승인 회원이 자동으로 후보로 등록됩니다 (1인 5표)
+                        목사선출: 목사 직분의 회원 중에서 후보를 선택합니다
                     {:else if voteType === "elder"}
-                        장로선출: 모든 승인 회원이 자동으로 후보로 등록됩니다 (1인 5표)
+                        장로선출: 장로 직분의 회원 중에서 후보를 선택합니다
                     {:else}
-                        일반의제: 관리자가 직접 후보를 지정합니다
+                        일반의제: 모든 회원 중에서 후보를 선택합니다
                     {/if}
                 </p>
             </div>
@@ -239,13 +254,27 @@
                         min="1"
                         max="10"
                         bind:value={maxSelections}
-                        disabled={isAutoCandidate}
                     />
                     <span class="text-gray-500">명까지 선택 가능</span>
                 </div>
-                {#if isAutoCandidate}
-                    <p class="text-sm text-gray-500 mt-1">목사/장로 선출은 1인 5표로 고정됩니다</p>
-                {/if}
+                <p class="text-sm text-gray-500 mt-1">선출할 인원 수를 설정하세요</p>
+            </div>
+
+            <div class="form-group">
+                <label class="label" for="resultDisplayCount">결과 표시 수 *</label>
+                <div class="flex items-center gap-4">
+                    <input
+                        type="number"
+                        id="resultDisplayCount"
+                        class="input"
+                        style="max-width: 120px;"
+                        min="1"
+                        max="100"
+                        bind:value={resultDisplayCount}
+                    />
+                    <span class="text-gray-500">명까지 결과 공개</span>
+                </div>
+                <p class="text-sm text-gray-500 mt-1">투표 종료 후 공개할 순위 수입니다</p>
             </div>
 
             <div class="form-group">
@@ -290,91 +319,81 @@
             </div>
         </div>
     {:else if step === 2}
-        <!-- 2단계: 후보 선택 (일반의제만) -->
-        {#if isAutoCandidate}
-            <!-- 목사/장로 선출은 후보 자동 등록 -->
-            <div class="card card-lg animate-fadeIn">
-                <div class="text-center py-8">
-                    <div class="text-6xl mb-4">👥</div>
-                    <h2 class="text-xl font-bold mb-2">후보 자동 등록</h2>
-                    <p class="text-gray-600 mb-4">
-                        {getVoteTypeLabel(voteType)} 투표는 모든 승인된 회원({data.approvedMembers.length}명)이 자동으로
-                        후보로 등록됩니다.
-                    </p>
-                    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-                        ✅ 총 {data.approvedMembers.length}명의 후보가 자동 등록됩니다
-                    </div>
+        <!-- 2단계: 후보 선택 -->
+        <div class="card card-lg animate-fadeIn">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                    <span class="font-bold text-lg">후보 선택</span>
+                    <span class="ml-2 text-primary-600 font-bold">
+                        ({selectedMemberIds.length}명 선택됨)
+                    </span>
                 </div>
-
-                <div class="flex gap-3">
-                    <button class="btn btn-secondary flex-1" onclick={() => (step = 1)}> ← 이전 </button>
-                    <button class="btn btn-primary flex-1" onclick={() => (step = 3)}> 다음 → </button>
+                <div class="flex gap-2">
+                    <button class="btn btn-primary btn-sm" onclick={selectAllMembers}> ✓ 전체 선택 </button>
+                    <button class="btn btn-secondary btn-sm" onclick={deselectAllMembers}> ✕ 전체 해제 </button>
                 </div>
             </div>
-        {:else}
-            <!-- 일반의제는 후보 직접 선택 -->
-            <div class="card card-lg animate-fadeIn">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <div>
-                        <span class="font-bold text-lg">후보 선택</span>
-                        <span class="ml-2 text-primary-600 font-bold">
-                            ({selectedMemberIds.length}명 선택됨)
-                        </span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="btn btn-primary btn-sm" onclick={selectAllMembers}> ✓ 전체 선택 </button>
-                        <button class="btn btn-secondary btn-sm" onclick={deselectAllMembers}> ✕ 전체 해제 </button>
-                    </div>
-                </div>
 
-                <p class="text-gray-500 mb-4">
-                    투표에 등록할 후보를 선택하세요. 승인된 회원({data.approvedMembers.length}명) 중에서 선택할 수
-                    있습니다.
-                </p>
-
-                <!-- 검색 -->
-                <input
-                    type="text"
-                    class="input mb-4"
-                    placeholder="🔍 이름 또는 교회로 검색..."
-                    bind:value={searchQuery}
-                />
-
-                <!-- 회원 목록 -->
-                <div class="max-h-96 overflow-y-auto border rounded-lg">
-                    {#each filteredMembers() as member, i}
-                        {@const isSelected = selectedMemberIds.includes(member.id)}
-                        <button
-                            type="button"
-                            class="w-full text-left px-4 py-3 flex items-center gap-3 border-b last:border-b-0 hover:bg-gray-50
-							{isSelected ? 'bg-primary-50' : ''}"
-                            onclick={() => toggleMember(member.id)}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={isSelected}
-                                class="w-5 h-5 accent-primary-500"
-                                onclick={(e) => e.stopPropagation()}
-                                onchange={() => toggleMember(member.id)}
-                            />
-                            <div class="flex-1">
-                                <div class="font-medium">{member.name}</div>
-                                <div class="text-sm text-gray-500">{member.church} · {member.position}</div>
-                            </div>
-                        </button>
-                    {/each}
-                </div>
-
-                {#if filteredMembers().length === 0}
-                    <div class="text-center py-8 text-gray-500">검색 결과가 없습니다</div>
+            <p class="text-gray-500 mb-4">
+                {#if voteType === "pastor"}
+                    목사 직분의 회원({candidateMembers().length}명) 중에서 후보를 선택하세요.
+                {:else if voteType === "elder"}
+                    장로 직분의 회원({candidateMembers().length}명) 중에서 후보를 선택하세요.
+                {:else}
+                    승인된 회원({candidateMembers().length}명) 중에서 후보를 선택하세요.
                 {/if}
+            </p>
 
-                <div class="flex gap-3 mt-8">
-                    <button class="btn btn-secondary flex-1" onclick={() => (step = 1)}> ← 이전 </button>
-                    <button class="btn btn-primary flex-1" onclick={goToStep3}> 다음 → </button>
-                </div>
+            <!-- 검색 -->
+            <input
+                type="text"
+                class="input mb-4"
+                placeholder="🔍 이름 또는 교회로 검색..."
+                bind:value={searchQuery}
+            />
+
+            <!-- 회원 목록 -->
+            <div class="max-h-96 overflow-y-auto border rounded-lg">
+                {#each filteredMembers() as member, i}
+                    {@const isSelected = selectedMemberIds.includes(member.id)}
+                    <button
+                        type="button"
+                        class="w-full text-left px-4 py-3 flex items-center gap-3 border-b last:border-b-0 hover:bg-gray-50
+                        {isSelected ? 'bg-primary-50' : ''}"
+                        onclick={() => toggleMember(member.id)}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={isSelected}
+                            class="w-5 h-5 accent-primary-500"
+                            onclick={(e) => e.stopPropagation()}
+                            onchange={() => toggleMember(member.id)}
+                        />
+                        <div class="flex-1">
+                            <div class="font-medium">{member.name}</div>
+                            <div class="text-sm text-gray-500">{member.church} · {member.position}</div>
+                        </div>
+                    </button>
+                {/each}
             </div>
-        {/if}
+
+            {#if filteredMembers().length === 0}
+                <div class="text-center py-8 text-gray-500">
+                    {#if voteType === "pastor"}
+                        목사 직분의 회원이 없습니다
+                    {:else if voteType === "elder"}
+                        장로 직분의 회원이 없습니다
+                    {:else}
+                        검색 결과가 없습니다
+                    {/if}
+                </div>
+            {/if}
+
+            <div class="flex gap-3 mt-8">
+                <button class="btn btn-secondary flex-1" onclick={() => (step = 1)}> ← 이전 </button>
+                <button class="btn btn-primary flex-1" onclick={goToStep3}> 다음 → </button>
+            </div>
+        </div>
     {:else}
         <!-- 3단계: 확인 -->
         <div class="card card-lg animate-fadeIn">
@@ -400,6 +419,10 @@
                     <span class="font-medium">{maxSelections}명</span>
                 </div>
                 <div class="flex justify-between py-3 border-b">
+                    <span class="text-gray-500">결과 표시 수</span>
+                    <span class="font-medium">{resultDisplayCount}명</span>
+                </div>
+                <div class="flex justify-between py-3 border-b">
                     <span class="text-gray-500">PIN 번호</span>
                     <span class="font-mono font-bold text-primary-600">{pin}</span>
                 </div>
@@ -410,16 +433,12 @@
                 <div class="flex justify-between py-3 border-b">
                     <span class="text-gray-500">후보 수</span>
                     <span class="font-medium">
-                        {#if isAutoCandidate}
-                            {data.approvedMembers.length}명 (자동 등록)
-                        {:else}
-                            {selectedMemberIds.length}명
-                        {/if}
+                        {selectedMemberIds.length}명
                     </span>
                 </div>
             </div>
 
-            {#if !isAutoCandidate && selectedMemberIds.length > 0}
+            {#if selectedMemberIds.length > 0}
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <h3 class="font-bold mb-3">선택된 후보 목록</h3>
                     <div class="max-h-48 overflow-y-auto">

@@ -6,12 +6,12 @@ import { cuid2 } from "$lib/utils/cuid";
 
 export const POST: RequestHandler = async ({ params, request, platform, locals }) => {
     if (!locals.user) {
-        throw error(401, "Authentication required");
+        throw error(401, "로그인이 필요합니다.");
     }
 
     // 관리자는 투표할 수 없음
     if (locals.user.isAdmin) {
-        throw error(403, "Administrators cannot vote");
+        throw error(403, "관리자는 투표에 참여할 수 없습니다.");
     }
 
     const env = platform?.env;
@@ -25,11 +25,19 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
 
     const { pin, selectedCandidateIds } = body;
 
+    // 회원 정보 조회 - 투표 권한 확인
+    const memberResult = await db.select().from(members).where(eq(members.id, locals.user.id)).limit(1);
+    const member = memberResult[0];
+
+    if (!member || member.canVote === false) {
+        throw error(403, "현재 투표 권한이 없습니다. 관리자에게 문의해주세요.");
+    }
+
     // 투표 정보 조회
     const voteResult = await db.select().from(votes).where(eq(votes.id, voteId)).limit(1);
 
     if (voteResult.length === 0) {
-        throw error(404, "Vote not found");
+        throw error(404, "투표를 찾을 수 없습니다.");
     }
 
     const vote = voteResult[0];
@@ -46,12 +54,12 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
     // 투표 상태 확인
     const now = new Date();
     if (vote.status === "ended" || vote.endTime <= now) {
-        throw error(400, "Vote has ended");
+        throw error(400, "이미 종료된 투표입니다.");
     }
 
     // PIN 확인
     if (pin !== vote.pin) {
-        throw error(403, "Invalid PIN");
+        throw error(403, "투표 비밀번호가 올바르지 않습니다.");
     }
 
     // 이미 투표했는지 확인
@@ -62,16 +70,16 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
         .limit(1);
 
     if (existingRecord.length > 0) {
-        throw error(400, "Already voted");
+        throw error(400, "이미 투표하셨습니다. 한 번 투표하면 다시 투표할 수 없습니다.");
     }
 
     // 선택 수 확인
     if (!selectedCandidateIds || selectedCandidateIds.length === 0) {
-        throw error(400, "No candidates selected");
+        throw error(400, "최소 1명 이상의 후보를 선택해주세요.");
     }
 
     if (selectedCandidateIds.length > vote.maxSelections) {
-        throw error(400, `Maximum ${vote.maxSelections} selections allowed`);
+        throw error(400, `최대 ${vote.maxSelections}명까지 선택할 수 있습니다.`);
     }
 
     // 투표 기록 생성

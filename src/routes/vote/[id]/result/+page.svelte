@@ -27,14 +27,17 @@
         data.results?.vote?.status === "ended" || (data.results?.vote?.endTime && new Date(data.results.vote.endTime) <= new Date()),
     );
 
+    // 투표 진행 중 여부
+    const isActiveVoting = $derived(data.results?.isActiveVoting || false);
+
     // 관리자 여부
     const isAdmin = $derived(data.results?.isAdmin || false);
 
     // 회원별 투표 현황
     const memberVoteStatus = $derived((data.results?.memberVoteStatus || []) as MemberVoteStatus[]);
 
-    // 탭 상태
-    let activeTab = $state<"results" | "voters">("results");
+    // 탭 상태 - 투표 진행 중이고 관리자가 아니면 투표 현황 탭을 기본으로
+    let activeTab = $state<"results" | "voters">((isActiveVoting && !isAdmin) ? "voters" : "results");
 
     // 투표한 회원 / 안한 회원 필터
     const votedMembers = $derived(memberVoteStatus.filter((m) => m.hasVoted));
@@ -69,8 +72,10 @@
             <p class="page-subtitle">
                 {#if isEnded}
                     최종 결과
+                {:else if isActiveVoting && !isAdmin}
+                    투표 진행 중
                 {:else}
-                    실시간 현황 (상위 10명)
+                    실시간 현황
                 {/if}
             </p>
         </div>
@@ -109,66 +114,75 @@
         </div>
 
         <!-- 결과 목록 -->
-        {#if isAdmin}
-            <div class="tabs mb-4">
+        <div class="tabs mb-4">
+            {#if !isActiveVoting || isAdmin}
                 <button class="tab" class:active={activeTab === "results"} onclick={() => (activeTab = "results")}>
                     📊 득표 결과
                 </button>
-                <button class="tab" class:active={activeTab === "voters"} onclick={() => (activeTab = "voters")}>
-                    👥 투표 현황 ({votedMembers.length}/{memberVoteStatus.length})
-                </button>
-            </div>
-        {/if}
+            {/if}
+            <button class="tab" class:active={activeTab === "voters"} onclick={() => (activeTab = "voters")}>
+                👥 투표 현황 ({votedMembers.length}/{memberVoteStatus.length})
+            </button>
+        </div>
 
         {#if activeTab === "results"}
             <div class="card card-lg">
-                <h2 class="text-xl font-bold mb-6">
-                    {#if isEnded}
-                        📊 최종 결과 (상위 10명)
-                    {:else}
-                        📊 현재 현황 (상위 10명)
-                    {/if}
-                </h2>
+                {#if isActiveVoting && !isAdmin}
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4">🗳️</div>
+                        <h2 class="text-xl font-bold mb-2 text-primary-600">투표 진행 중입니다</h2>
+                        <p class="text-gray-600 mb-4">투표가 종료되면 결과가 공개됩니다.</p>
+                        <p class="text-sm text-gray-500">종료 예정: {formatDate(data.results.vote.endTime)}</p>
+                    </div>
+                {:else}
+                    <h2 class="text-xl font-bold mb-6">
+                        {#if isEnded}
+                            📊 최종 결과 (상위 {data.results.vote.resultDisplayCount || 10}명)
+                        {:else}
+                            📊 현재 현황 (상위 {data.results.vote.resultDisplayCount || 10}명)
+                        {/if}
+                    </h2>
 
-            {#if topResults.length === 0}
-                <div class="empty-state">
-                    <div class="empty-state-icon">📭</div>
-                    <p class="empty-state-text">아직 투표 결과가 없습니다</p>
-                </div>
-            {:else}
-                <div class="flex flex-col gap-4">
-                    {#each topResults as result, i}
-                        {@const percentage = maxVotes > 0 ? (result.count / maxVotes) * 100 : 0}
-                        <div class="animate-fadeIn" style="animation-delay: {i * 0.05}s;">
-                            <div class="flex items-center gap-4 mb-2">
-                                <div
-                                    class="flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg
-									{i === 0 ? 'bg-yellow-400 text-yellow-900' : ''}
-									{i === 1 ? 'bg-gray-300 text-gray-700' : ''}
-									{i === 2 ? 'bg-orange-300 text-orange-800' : ''}
-									{i > 2 ? 'bg-gray-100 text-gray-600' : ''}"
-                                >
-                                    {i + 1}
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <div>
-                                            <span class="font-semibold text-lg">{result.candidateName}</span>
-                                            {#if result.church && result.church !== "-"}
-                                                <span class="text-gray-500 ml-2">({result.church})</span>
-                                            {/if}
-                                        </div>
-                                        <span class="font-bold text-primary-600 text-xl">{result.count}표</span>
-                                    </div>
-                                    <div class="result-bar">
-                                        <div class="result-bar-fill" style="width: {percentage}%;"></div>
-                                    </div>
-                                </div>
-                            </div>
+                    {#if topResults.length === 0}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p class="empty-state-text">아직 투표 결과가 없습니다</p>
                         </div>
-                    {/each}
-                </div>
-            {/if}
+                    {:else}
+                        <div class="flex flex-col gap-4">
+                            {#each topResults as result, i}
+                                {@const percentage = maxVotes > 0 ? (result.count / maxVotes) * 100 : 0}
+                                <div class="animate-fadeIn" style="animation-delay: {i * 0.05}s;">
+                                    <div class="flex items-center gap-4 mb-2">
+                                        <div
+                                            class="flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg
+											{i === 0 ? 'bg-yellow-400 text-yellow-900' : ''}
+											{i === 1 ? 'bg-gray-300 text-gray-700' : ''}
+											{i === 2 ? 'bg-orange-300 text-orange-800' : ''}
+											{i > 2 ? 'bg-gray-100 text-gray-600' : ''}"
+                                        >
+                                            {i + 1}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between mb-1">
+                                                <div>
+                                                    <span class="font-semibold text-lg">{result.candidateName}</span>
+                                                    {#if result.church && result.church !== "-"}
+                                                        <span class="text-gray-500 ml-2">({result.church})</span>
+                                                    {/if}
+                                                </div>
+                                                <span class="font-bold text-primary-600 text-xl">{result.count}표</span>
+                                            </div>
+                                            <div class="result-bar">
+                                                <div class="result-bar-fill" style="width: {percentage}%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
+                {/if}
             </div>
         {:else if activeTab === "voters"}
             <div class="card card-lg">
@@ -210,7 +224,9 @@
                                         <th class="text-left p-3">교회</th>
                                         <th class="text-left p-3">시찰</th>
                                         <th class="text-left p-3">직분</th>
-                                        <th class="text-left p-3">투표 시각</th>
+                                        {#if isAdmin}
+                                            <th class="text-left p-3">투표 시각</th>
+                                        {/if}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -220,13 +236,15 @@
                                             <td class="p-3">{member.church}</td>
                                             <td class="p-3">{member.sigchal}</td>
                                             <td class="p-3">{member.position || "-"}</td>
-                                            <td class="p-3 text-gray-500">
-                                                {#if member.votedAt}
-                                                    {formatDate(member.votedAt)}
-                                                {:else}
-                                                    -
-                                                {/if}
-                                            </td>
+                                            {#if isAdmin}
+                                                <td class="p-3 text-gray-500">
+                                                    {#if member.votedAt}
+                                                        {formatDate(member.votedAt)}
+                                                    {:else}
+                                                        -
+                                                    {/if}
+                                                </td>
+                                            {/if}
                                         </tr>
                                     {/each}
                                 </tbody>

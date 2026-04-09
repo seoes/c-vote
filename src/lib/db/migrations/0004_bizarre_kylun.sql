@@ -1,0 +1,1 @@
+ALTER TABLE `votes` ADD `result_display_count` integer DEFAULT 10 NOT NULL;

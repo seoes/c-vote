@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS members (
 	position TEXT NOT NULL,
 	status TEXT NOT NULL DEFAULT 'pending',
 	is_admin INTEGER NOT NULL DEFAULT 0,
+	can_vote INTEGER NOT NULL DEFAULT 1,
 	created_at INTEGER NOT NULL
 );
 
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS votes (
 	description TEXT,
 	vote_type TEXT NOT NULL,
 	max_selections INTEGER NOT NULL DEFAULT 1,
+	result_display_count INTEGER NOT NULL DEFAULT 10,
 	pin TEXT NOT NULL,
 	end_time INTEGER NOT NULL,
 	status TEXT NOT NULL DEFAULT 'active',

@@ -30,35 +30,35 @@ export const POST: RequestHandler = async ({ request, platform, cookies }) => {
 
     // 유효성 검사
     if (!name?.trim() || !phone?.trim() || !password) {
-        throw error(400, "All fields are required");
+        throw error(400, "모든 항목을 입력해주세요.");
     }
 
     // 회원 찾기
     const result = await db.select().from(members).where(eq(members.phone, phone)).limit(1);
 
     if (result.length === 0) {
-        throw error(401, "Invalid credentials");
+        throw error(401, "등록되지 않은 전화번호입니다.");
     }
 
     const member = result[0];
 
     // 이름 확인
     if (member.name !== name.trim()) {
-        throw error(401, "Invalid credentials");
+        throw error(401, "이름이 일치하지 않습니다.");
     }
 
     // 비밀번호 확인
     if (!verifyPassword(password, member.passwordHash)) {
-        throw error(401, "Invalid credentials");
+        throw error(401, "비밀번호가 올바르지 않습니다.");
     }
 
     // 상태 확인
     if (member.status === "pending") {
-        throw error(403, "Account pending approval");
+        throw error(403, "관리자 승인 대기 중입니다. 승인 후 로그인할 수 있습니다.");
     }
 
     if (member.status === "rejected") {
-        throw error(403, "Account rejected");
+        throw error(403, "가입 신청이 거절되었습니다. 관리자에게 문의해주세요.");
     }
 
     // 토큰 생성

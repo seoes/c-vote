@@ -17,7 +17,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
     // 유효성 검사
     if (!name?.trim() || !phone?.trim() || !securityAnswer?.trim()) {
-        throw error(400, "All fields are required");
+        throw error(400, "모든 항목을 입력해주세요.");
     }
 
     // 사용자 찾기 (이름, 전화번호, 보안답변 일치)
@@ -34,14 +34,18 @@ export const POST: RequestHandler = async ({ request, platform }) => {
         .limit(1);
 
     if (member.length === 0) {
-        throw error(401, "Information does not match");
+        throw error(401, "입력하신 정보가 일치하지 않습니다. 이름, 전화번호, 성경인물 답변을 확인해주세요.");
     }
 
     const user = member[0];
 
     // 승인된 회원만 비밀번호 재설정 가능
-    if (user.status !== "approved") {
-        throw error(403, "Account not approved");
+    if (user.status === "pending") {
+        throw error(403, "관리자 승인 대기 중입니다. 승인 후 비밀번호를 재설정할 수 있습니다.");
+    }
+
+    if (user.status === "rejected") {
+        throw error(403, "가입 신청이 거절된 계정입니다.");
     }
 
     // 재설정용 토큰 생성 (10분 유효)

@@ -6,7 +6,7 @@ import { cuid2 } from "$lib/utils/cuid";
 
 export const GET: RequestHandler = async ({ url, platform, locals }) => {
     if (!locals.user) {
-        throw error(401, "Authentication required");
+        throw error(401, "로그인이 필요합니다.");
     }
 
     const env = platform?.env;
@@ -52,7 +52,7 @@ export const GET: RequestHandler = async ({ url, platform, locals }) => {
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
     // 관리자 권한 확인
     if (!locals.user?.isAdmin) {
-        throw error(403, "Admin access required");
+        throw error(403, "관리자 권한이 필요합니다.");
     }
 
     const env = platform?.env;
@@ -63,19 +63,19 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
     const db = getDb(env.DB);
     const body = await request.json();
 
-    const { title, description, voteType, maxSelections, pin, endTime, customCandidates } = body;
+    const { title, description, voteType, maxSelections, resultDisplayCount, pin, endTime, candidates } = body;
 
     // 유효성 검사
     if (!title?.trim() || !voteType || !pin || !endTime) {
-        throw error(400, "Required fields missing");
+        throw error(400, "필수 항목이 누락되었습니다. 제목, 투표 종류, PIN, 종료 시간을 확인해주세요.");
     }
 
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        throw error(400, "PIN must be 4 digits");
+        throw error(400, "PIN 번호는 4자리 숫자여야 합니다.");
     }
 
     if (!["pastor", "elder", "general"].includes(voteType)) {
-        throw error(400, "Invalid vote type");
+        throw error(400, "올바르지 않은 투표 종류입니다.");
     }
 
     // 투표 생성
@@ -87,20 +87,24 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
         description: description?.trim() || null,
         voteType,
         maxSelections: maxSelections || 5,
+        resultDisplayCount: resultDisplayCount || 10,
         pin,
         endTime: new Date(endTime),
         status: "active",
     });
 
-    // 일반의제인 경우 커스텀 후보 등록
-    if (voteType === "general" && customCandidates?.length > 0) {
-        const candidateValues = customCandidates.map((c: { name: string; church?: string }, index: number) => ({
-            id: cuid2(),
-            voteId,
-            name: c.name,
-            church: c.church || null,
-            order: index,
-        }));
+    // 후보 등록 (모든 투표 유형)
+    if (candidates?.length > 0) {
+        const candidateValues = candidates.map(
+            (c: { id?: string; name: string; church?: string }, index: number) => ({
+                id: cuid2(),
+                voteId,
+                memberId: c.id || null, // 목사/장로 선출 시 회원 ID 저장
+                name: c.name,
+                church: c.church || null,
+                order: index,
+            }),
+        );
 
         await db.insert(candidates).values(candidateValues);
     }

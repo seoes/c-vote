@@ -16,9 +16,12 @@
     // 검색어
     let searchQuery = $state("");
 
+    // 회원 목록 (반응형)
+    let membersList = $state(data.members);
+
     // 필터링된 회원 목록
     const filteredMembers = $derived(() => {
-        let list = data.members.filter((m: any) => !m.isAdmin);
+        let list = membersList.filter((m: any) => !m.isAdmin);
 
         // 탭 필터
         if (activeTab === "pending") {
@@ -42,8 +45,8 @@
     });
 
     // 통계
-    const pendingMembers = $derived(data.members.filter((m: any) => m.status === "pending"));
-    const approvedMembers = $derived(data.members.filter((m: any) => m.status === "approved"));
+    const pendingMembers = $derived(membersList.filter((m: any) => m.status === "pending"));
+    const approvedMembers = $derived(membersList.filter((m: any) => m.status === "approved"));
 
     function formatDate(date: Date | string): string {
         const d = new Date(date);
@@ -92,6 +95,52 @@
             }
         }
     }
+
+    async function toggleCanVote(memberId: string, currentValue: boolean) {
+        try {
+            const res = await fetch(`/api/members/${memberId}/can-vote`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ canVote: !currentValue }),
+            });
+            if (res.ok) {
+                // 로컬 상태 업데이트
+                membersList = membersList.map((m: any) =>
+                    m.id === memberId ? { ...m, canVote: !currentValue } : m,
+                );
+            } else {
+                alert("투표 권한 변경에 실패했습니다.");
+            }
+        } catch (e) {
+            alert("서버 오류가 발생했습니다.");
+        }
+    }
+
+    async function setAllCanVote(canVote: boolean) {
+        const action = canVote ? "전체 투표 가능" : "전체 투표 불가";
+        if (confirm(`정말 모든 승인된 회원을 '${action}'으로 설정하시겠습니까?`)) {
+            try {
+                // 승인된 회원들의 ID 목록
+                const approvedIds = membersList
+                    .filter((m: any) => m.status === "approved" && !m.isAdmin)
+                    .map((m: any) => m.id);
+
+                // 병렬로 요청
+                const promises = approvedIds.map((id: string) =>
+                    fetch(`/api/members/${id}/can-vote`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ canVote }),
+                    }),
+                );
+
+                await Promise.all(promises);
+                window.location.reload();
+            } catch (e) {
+                alert("일괄 설정에 실패했습니다.");
+            }
+        }
+    }
 </script>
 
 <svelte:head>
@@ -121,6 +170,18 @@
     <div class="card mb-4">
         <input type="text" class="input" placeholder="🔍 이름, 교회, 전화번호로 검색..." bind:value={searchQuery} />
     </div>
+
+    <!-- 일괄 투표 권한 설정 버튼 -->
+    {#if activeTab === "approved" || activeTab === "all"}
+        <div class="flex gap-2 mb-4">
+            <button class="btn btn-success btn-sm" onclick={() => setAllCanVote(true)}>
+                전체 투표 가능
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick={() => setAllCanVote(false)}>
+                전체 투표 불가
+            </button>
+        </div>
+    {/if}
 
     <!-- 회원 목록 -->
     {#if filteredMembers().length === 0}
@@ -166,6 +227,17 @@
                         <span class="font-medium">직분:</span>
                         {member.position || '-'}
                     </div>
+                    {#if member.status === "approved"}
+                        <div class="text-sm text-gray-600 mb-3">
+                            <span class="font-medium">투표권한:</span>
+                            <button
+                                class="btn btn-sm ml-2 {member.canVote !== false ? 'btn-success' : 'btn-secondary'}"
+                                onclick={() => toggleCanVote(member.id, member.canVote !== false)}
+                            >
+                                {member.canVote !== false ? '가능' : '불가'}
+                            </button>
+                        </div>
+                    {/if}
                     <div class="flex gap-2">
                         {#if member.status === "pending"}
                             <button class="btn btn-success btn-sm flex-1" onclick={() => handleApprove(member.id)}>
@@ -194,6 +266,7 @@
                             <th>소속교회</th>
                             <th>시찰</th>
                             <th>직분</th>
+                            <th>투표가능</th>
                             <th>가입일</th>
                             <th>상태</th>
                             <th>관리</th>
@@ -207,6 +280,18 @@
                                 <td>{member.church}</td>
                                 <td class="text-sm">{member.sigchal}</td>
                                 <td class="text-sm">{member.position || '-'}</td>
+                                <td>
+                                    {#if member.status === "approved"}
+                                        <button
+                                            class="btn btn-sm {member.canVote !== false ? 'btn-success' : 'btn-secondary'}"
+                                            onclick={() => toggleCanVote(member.id, member.canVote !== false)}
+                                        >
+                                            {member.canVote !== false ? '가능' : '불가'}
+                                        </button>
+                                    {:else}
+                                        <span class="text-gray-400">-</span>
+                                    {/if}
+                                </td>
                                 <td class="text-sm text-gray-500">{formatDate(member.createdAt)}</td>
                                 <td>
                                     {#if member.status === "pending"}

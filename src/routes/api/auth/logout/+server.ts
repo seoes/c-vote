@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 export const POST: RequestHandler = async ({ platform, cookies, locals }) => {
     const env = platform?.env;
     if (!env?.DB) {
-        throw error(500, "Server configuration error");
+        throw error(500, "서버 설정 오류가 발생했습니다.");
     }
 
     const refreshToken = cookies.get(REFRESH_TOKEN_COOKIE);

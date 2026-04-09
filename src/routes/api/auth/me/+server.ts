@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
     if (!locals.user) {
-        throw error(401, "Not authenticated");
+        throw error(401, "로그인이 필요합니다.");
     }
 
     const env = platform?.env;
@@ -19,7 +19,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
     const result = await db.select().from(members).where(eq(members.id, locals.user.id)).limit(1);
 
     if (result.length === 0) {
-        throw error(404, "User not found");
+        throw error(404, "사용자 정보를 찾을 수 없습니다.");
     }
 
     const member = result[0];
