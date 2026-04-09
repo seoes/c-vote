@@ -77,6 +77,21 @@
             }
         }
     }
+
+    async function handleDelete(memberId: string, memberName: string) {
+        if (confirm(`정말 '${memberName}' 회원을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+            try {
+                const res = await fetch(`/api/members/${memberId}`, { method: "DELETE" });
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    alert("삭제에 실패했습니다.");
+                }
+            } catch (e) {
+                alert("서버 오류가 발생했습니다.");
+            }
+        }
+    }
 </script>
 
 <svelte:head>
@@ -151,16 +166,19 @@
                         <span class="font-medium">직분:</span>
                         {member.position || '-'}
                     </div>
-                    {#if member.status === "pending"}
-                        <div class="flex gap-2">
+                    <div class="flex gap-2">
+                        {#if member.status === "pending"}
                             <button class="btn btn-success btn-sm flex-1" onclick={() => handleApprove(member.id)}>
                                 ✓ 승인
                             </button>
                             <button class="btn btn-danger btn-sm flex-1" onclick={() => handleReject(member.id)}>
                                 ✕ 거절
                             </button>
-                        </div>
-                    {/if}
+                        {/if}
+                        <button class="btn btn-secondary btn-sm" onclick={() => handleDelete(member.id, member.name)}>
+                            삭제
+                        </button>
+                    </div>
                 </div>
             {/each}
         </div>
@@ -200,8 +218,8 @@
                                     {/if}
                                 </td>
                                 <td>
-                                    {#if member.status === "pending"}
-                                        <div class="flex gap-2">
+                                    <div class="flex gap-2">
+                                        {#if member.status === "pending"}
                                             <button
                                                 class="btn btn-success btn-sm"
                                                 onclick={() => handleApprove(member.id)}
@@ -214,10 +232,14 @@
                                             >
                                                 거절
                                             </button>
-                                        </div>
-                                    {:else}
-                                        <span class="text-gray-400">-</span>
-                                    {/if}
+                                        {/if}
+                                        <button
+                                            class="btn btn-secondary btn-sm"
+                                            onclick={() => handleDelete(member.id, member.name)}
+                                        >
+                                            삭제
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         {/each}
