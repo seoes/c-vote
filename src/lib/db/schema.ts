@@ -21,7 +21,7 @@ export const members = sqliteTable(
         id: text("id").primaryKey(),
         name: text("name").notNull(),
         phone: text("phone").notNull(),
-        passwordHash: text("password_hash").notNull(),
+        passwordHash: text("password_hash"), // nullable - 후보자 계정은 비밀번호 없음
         church: text("church").notNull(),
         region: text("region", { enum: REGIONS as typeof REGIONS }).notNull(),
         sigchal: text("sigchal", { enum: SIGCHALS }).notNull(),

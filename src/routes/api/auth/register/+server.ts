@@ -34,8 +34,36 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
     // 중복 확인
     const existing = await db.select().from(members).where(eq(members.phone, phone)).limit(1);
+
     if (existing.length > 0) {
-        throw error(409, "이미 등록된 전화번호입니다.");
+        const member = existing[0];
+
+        // 이미 정식 회원 (비밀번호 있음)
+        if (member.passwordHash) {
+            throw error(409, "이미 가입된 전화번호입니다. 로그인해주세요.");
+        }
+
+        // 후보자 계정 전환
+        const passwordHash = hashPassword(password);
+
+        try {
+            await db
+                .update(members)
+                .set({
+                    passwordHash,
+                    securityAnswer: securityAnswer.trim(),
+                    canVote: true, // 전환 시 투표 권한 부여
+                })
+                .where(eq(members.id, member.id));
+
+            return json({
+                success: true,
+                message: "회원가입이 완료되었습니다. 관리자 승인 후 이용할 수 있습니다.",
+            });
+        } catch (e) {
+            console.error("Candidate conversion error:", e);
+            throw error(500, "회원가입 처리 중 오류가 발생했습니다.");
+        }
     }
 
     // 회원 생성

@@ -43,6 +43,13 @@
       "when": 1775716000000,
       "tag": "0005_add_can_vote",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1775736163752,
+      "tag": "0006_giant_starhawk",
+      "breakpoints": true
     }
   ]
 }

@@ -47,7 +47,11 @@ export const POST: RequestHandler = async ({ request, platform, cookies }) => {
         throw error(401, "이름이 일치하지 않습니다.");
     }
 
-    // 비밀번호 확인
+    // 비밀번호 확인 (후보자 계정은 비밀번호 없음)
+    if (!member.passwordHash) {
+        throw error(401, "후보자로 등록된 계정입니다. 회원가입을 진행해주세요.");
+    }
+
     if (!verifyPassword(password, member.passwordHash)) {
         throw error(401, "비밀번호가 올바르지 않습니다.");
     }
