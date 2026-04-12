@@ -63,7 +63,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
     const db = getDb(env.DB);
     const body = await request.json();
 
-    const { title, description, voteType, maxSelections, resultDisplayCount, pin, endTime, candidates } = body;
+    const { title, description, voteType, maxSelections, resultDisplayCount, pin, endTime, candidateList } = body;
 
     // 유효성 검사
     if (!title?.trim() || !voteType || !pin || !endTime) {
@@ -94,8 +94,8 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
     });
 
     // 후보 등록 (모든 투표 유형)
-    if (candidates?.length > 0) {
-        const candidateValues = candidates.map(
+    if (candidateList?.length > 0) {
+        const candidateValues = candidateList.map(
             (c: { id?: string; name: string; church?: string }, index: number) => ({
                 id: cuid2(),
                 voteId,
@@ -105,7 +105,6 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
                 order: index,
             }),
         );
-
         await db.insert(candidates).values(candidateValues);
     }
 
