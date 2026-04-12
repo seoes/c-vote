@@ -1,6 +1,6 @@
 import type { RequestHandler } from "./$types";
 import { json, error } from "@sveltejs/kit";
-import { getDb, votes, candidates, members, voteRecords } from "$lib/db";
+import { getDb, votes, candidates, members, voteRecords, voteSelections } from "$lib/db";
 import { eq, and } from "drizzle-orm";
 
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
@@ -47,4 +47,28 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
         participantCount,
         userVoted,
     });
+};
+
+export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
+    // 관리자 권한 확인
+    if (!locals.user?.isAdmin) {
+        throw error(403, "관리자 권한이 필요합니다.");
+    }
+
+    const env = platform?.env;
+    if (!env) {
+        throw new Error("Environment not available. Run with 'wrangler dev'");
+    }
+
+    const db = getDb(env.DB);
+    const voteId = params.id;
+
+    await db.batch([
+        db.delete(voteSelections).where(eq(voteSelections.recordId, voteId)),
+        db.delete(voteRecords).where(eq(voteRecords.voteId, voteId)),
+        db.delete(candidates).where(eq(candidates.voteId, voteId)),
+        db.delete(votes).where(eq(votes.id, voteId)),
+    ]);
+
+    return json({ success: true });
 };

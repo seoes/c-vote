@@ -23,6 +23,21 @@
                 }
             } catch (e) {
                 alert("서버 오류가 발생했습니다.");
+                console.error(e);
+            }
+        }
+    }
+
+    async function handleDeleteVote(voteId: string, title: string) {
+        if (confirm(`"${title}" 투표를 삭제하시겠습니까?\n삭제 후에는 더 이상 투표할 수 없습니다.`)) {
+            try {
+                const res = await fetch(`/api/votes/${voteId}`, { method: "DELETE" });
+                if (res.ok) {
+                    window.location.reload();
+                }
+            } catch (e) {
+                alert("서버 오류가 발생했습니다.");
+                console.error(e);
             }
         }
     }
@@ -83,7 +98,7 @@
             </div>
         {:else}
             <div class="flex flex-col gap-4">
-                {#each data.activeVotes as vote, i}
+                {#each data.activeVotes as vote, i (vote.id)}
                     <div class="card animate-fadeIn" style="animation-delay: {i * 0.05}s;">
                         <div class="flex items-start justify-between mb-3">
                             <div>
@@ -124,6 +139,9 @@
                             <button class="btn btn-danger btn-sm" onclick={() => handleEndVote(vote.id, vote.title)}>
                                 ⏹️ 투표 종료
                             </button>
+                            <button class="btn btn-danger btn-sm" onclick={() => handleDeleteVote(vote.id, vote.title)}>
+                                ❌ 투표 삭제
+                            </button>
                         </div>
                     </div>
                 {/each}
@@ -136,7 +154,7 @@
         </div>
     {:else}
         <div class="flex flex-col gap-4">
-            {#each data.endedVotes as vote, i}
+            {#each data.endedVotes as vote, i (vote.id)}
                 <div class="card animate-fadeIn" style="animation-delay: {i * 0.05}s;">
                     <div class="flex items-start justify-between mb-3">
                         <div>
@@ -162,6 +180,9 @@
                     </div>
 
                     <a href="/vote/{vote.id}/result" class="btn btn-primary btn-sm">📊 결과 보기</a>
+                    <button class="btn btn-danger btn-sm" onclick={() => handleDeleteVote(vote.id, vote.title)}>
+                        ❌ 투표 삭제
+                    </button>
                 </div>
             {/each}
         </div>
