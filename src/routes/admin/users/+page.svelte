@@ -239,10 +239,14 @@
     <title>회원 관리 - 노회 투표</title>
 </svelte:head>
 
-<div class="page-container page-container-wide">
+<div class="page-container page-container-wider">
     <div class="page-header">
         <h1 class="page-title">회원 관리</h1>
         <p class="page-subtitle">회원 목록 조회 및 승인</p>
+    </div>
+
+    <div class="mb-6 flex justify-end">
+        <a href="/admin" class="btn btn-secondary">← 대시보드로</a>
     </div>
 
     <!-- 탭 -->
@@ -382,7 +386,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {#each filteredMembers() as member, i}
+                        {#each filteredMembers() as member, i (member.id)}
                             <tr class="animate-fadeIn" style="animation-delay: {i * 0.02}s;">
                                 <td class="font-medium">
                                     {member.name}

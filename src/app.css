@@ -258,6 +258,10 @@ body {
     max-width: 900px;
 }
 
+.page-container-wider {
+    max-width: 1400px;
+}
+
 /* 헤더 */
 .page-header {
     text-align: center;

@@ -74,8 +74,9 @@
     </div>
 
     <!-- 새 투표 만들기 버튼 -->
-    <div class="mb-6">
+    <div class="mb-6 flex justify-between gap-2">
         <a href="/admin/votes/create" class="btn btn-primary btn-lg">➕ 새 투표 만들기</a>
+        <a href="/admin" class="btn btn-secondary">← 대시보드로</a>
     </div>
 
     <!-- 탭 -->
