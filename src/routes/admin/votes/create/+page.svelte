@@ -133,7 +133,7 @@
             };
 
             // 모든 투표 유형에서 후보자 목록 추가
-            body.candidates = selectedMembers.map((m: any) => ({
+            body.candidateList = selectedMembers.map((m: any) => ({
                 id: m.id,
                 name: m.name,
                 church: m.church,

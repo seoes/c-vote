@@ -11,6 +11,8 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
     const votesRes = await fetch("/api/votes");
     const votes = votesRes.ok ? await votesRes.json() : [];
 
+    console.log("votes", votes);
+
     // 구분
     const activeVotes = votes.filter((v: any) => v.status === "active" && new Date(v.endTime) > new Date());
     const endedVotes = votes.filter((v: any) => v.status === "ended" || new Date(v.endTime) <= new Date());

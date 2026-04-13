@@ -35,6 +35,9 @@ export const GET: RequestHandler = async ({ url, platform, locals }) => {
             const records = await db.select().from(voteRecords).where(eq(voteRecords.voteId, vote.id));
             const participantCount = records.length;
 
+            const candidateList = await db.select().from(candidates).where(eq(candidates.voteId, vote.id));
+            const candidateCount = candidateList.length;
+
             // 사용자가 이미 투표했는지 확인
             const userVoted = records.some((r) => r.memberId === locals.user!.id);
 
@@ -42,6 +45,7 @@ export const GET: RequestHandler = async ({ url, platform, locals }) => {
                 ...vote,
                 participantCount,
                 userVoted,
+                candidateCount,
             };
         }),
     );
@@ -93,6 +97,8 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
         status: "active",
     });
 
+    console.log(candidateList);
+
     // 후보 등록 (모든 투표 유형)
     if (candidateList?.length > 0) {
         const candidateValues = candidateList.map(
@@ -105,7 +111,16 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
                 order: index,
             }),
         );
-        await db.insert(candidates).values(candidateValues);
+        const MAX_D1_PARAMS = 100;
+        const PARAMS_PER_CANDIDATE = 6;
+        const CHUNK_SIZE = Math.floor(MAX_D1_PARAMS / PARAMS_PER_CANDIDATE);
+
+        for (let i = 0; i < candidateValues.length; i += CHUNK_SIZE) {
+            const chunk = candidateValues.slice(i, i + CHUNK_SIZE);
+            await db.insert(candidates).values(chunk);
+            console.log("chunk", chunk);
+        }
+        console.log("candidateValues", candidateValues);
     }
 
     return json({ success: true, voteId });
