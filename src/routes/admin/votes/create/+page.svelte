@@ -23,7 +23,9 @@
     // 투표 유형에 따른 후보자 필터링
     const candidateMembers = $derived(() => {
         // canVote가 true인 회원만 후보 목록에 포함
-        let list = data.approvedMembers.filter((m: any) => m.canVote !== false);
+        let list = data.approvedMembers.filter(
+            (m: any) => m.canVote !== false || (m.status === "pending" && m.passwordHash === null),
+        );
 
         if (voteType === "pastor") {
             // 목사 선출: 목사 직분인 회원만
@@ -345,12 +347,7 @@
             </p>
 
             <!-- 검색 -->
-            <input
-                type="text"
-                class="input mb-4"
-                placeholder="🔍 이름 또는 교회로 검색..."
-                bind:value={searchQuery}
-            />
+            <input type="text" class="input mb-4" placeholder="🔍 이름 또는 교회로 검색..." bind:value={searchQuery} />
 
             <!-- 회원 목록 -->
             <div class="max-h-96 overflow-y-auto border rounded-lg">

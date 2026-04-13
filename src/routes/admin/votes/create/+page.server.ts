@@ -12,7 +12,9 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
     const members = membersRes.ok ? await membersRes.json() : [];
     // 관리자 제외, 승인된 회원만, 투표 가능한 회원만
     const approvedMembers = members.filter(
-        (m: any) => m.status === "approved" && !m.isAdmin && m.canVote !== false,
+        (m: any) =>
+            (m.status === "approved" && !m.isAdmin && m.canVote !== false) ||
+            (m.status === "pending" && m.passwordHash === null),
     );
 
     return {
