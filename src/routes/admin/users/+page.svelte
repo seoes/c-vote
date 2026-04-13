@@ -40,6 +40,9 @@
     // 정식 회원 목록 (passwordHash가 있는 계정)
     const regularMembers = $derived(membersList.filter((m: any) => m.passwordHash !== null && !m.isAdmin));
 
+    // 직분 필터
+    let positionFilter = $state<"all" | "pastor" | "elder">("all");
+
     // 필터링된 회원 목록
     const filteredMembers = $derived(() => {
         let list = membersList.filter((m: any) => !m.isAdmin);
@@ -51,6 +54,13 @@
             list = list.filter((m: any) => m.status === "approved");
         } else if (activeTab === "pre-registered") {
             list = list.filter((m: any) => m.passwordHash === null);
+        }
+
+        // 직분 필터
+        if (positionFilter === "pastor") {
+            list = list.filter((m: any) => m.position === "목사");
+        } else if (positionFilter === "elder") {
+            list = list.filter((m: any) => m.position === "장로");
         }
 
         // 검색 필터
@@ -70,6 +80,57 @@
     // 통계
     const pendingMembers = $derived(membersList.filter((m: any) => m.status === "pending" && m.passwordHash !== null));
     const approvedMembers = $derived(membersList.filter((m: any) => m.status === "approved" && !m.isAdmin));
+
+    const nonAdminMembers = $derived(data.members.filter((m: any) => !m.isAdmin));
+    const pastorCount = $derived(nonAdminMembers.filter((m: any) => m.position === "목사").length);
+    const elderCount = $derived(nonAdminMembers.filter((m: any) => m.position === "장로").length);
+
+    // 일괄 승인을 위한 선택 상태
+    let selectedIds = $state<Set<string>>(new Set());
+
+    const pendingInView = $derived(filteredMembers().filter((m: any) => m.status === "pending"));
+    const allPendingSelected = $derived(
+        pendingInView.length > 0 && pendingInView.every((m: any) => selectedIds.has(m.id)),
+    );
+
+    function toggleSelect(id: string) {
+        const next = new Set(selectedIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        selectedIds = next;
+    }
+
+    function toggleSelectAll() {
+        if (allPendingSelected) {
+            selectedIds = new Set();
+        } else {
+            selectedIds = new Set(pendingInView.map((m: any) => m.id));
+        }
+    }
+
+    // 탭 변경 시 선택 초기화
+    $effect(() => {
+        activeTab;
+        selectedIds = new Set();
+    });
+
+    let bulkApproving = $state(false);
+
+    async function handleBulkApprove() {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`선택한 ${selectedIds.size}명을 일괄 승인하시겠습니까?`)) return;
+
+        bulkApproving = true;
+        try {
+            await Promise.all(
+                [...selectedIds].map((id) => fetch(`/api/members/${id}/approve`, { method: "PATCH" })),
+            );
+            window.location.reload();
+        } catch (e) {
+            alert("일괄 승인 중 오류가 발생했습니다.");
+            bulkApproving = false;
+        }
+    }
 
     function formatDate(date: Date | string): string {
         const d = new Date(date);
@@ -139,7 +200,6 @@
                 body: JSON.stringify({ canVote: !currentValue }),
             });
             if (res.ok) {
-                // 로컬 상태 업데이트
                 membersList = membersList.map((m: any) => (m.id === memberId ? { ...m, canVote: !currentValue } : m));
             } else {
                 alert("투표 권한 변경에 실패했습니다.");
@@ -153,12 +213,10 @@
         const action = canVote ? "전체 투표 가능" : "전체 투표 불가";
         if (confirm(`정말 모든 승인된 회원을 '${action}'으로 설정하시겠습니까?`)) {
             try {
-                // 승인된 회원들의 ID 목록
                 const approvedIds = membersList
                     .filter((m: any) => m.status === "approved" && !m.isAdmin)
                     .map((m: any) => m.id);
 
-                // 병렬로 요청
                 const promises = approvedIds.map((id: string) =>
                     fetch(`/api/members/${id}/can-vote`, {
                         method: "PATCH",
@@ -193,7 +251,6 @@
         preRegisterError = "";
         preRegisterLoading = true;
 
-        // 유효성 검사
         if (!preRegisterForm.name.trim()) {
             preRegisterError = "성명을 입력해주세요.";
             preRegisterLoading = false;
@@ -277,11 +334,54 @@
         <button class="btn btn-primary" onclick={openPreRegisterModal}>+ 후보자 미리 등록</button>
     </div>
 
+    <!-- 직분 필터 -->
+    <div class="flex gap-2 mb-4">
+        <button
+            class="btn btn-sm"
+            class:btn-primary={positionFilter === "all"}
+            class:btn-secondary={positionFilter !== "all"}
+            onclick={() => (positionFilter = "all")}
+        >
+            전체 ({nonAdminMembers.length})
+        </button>
+        <button
+            class="btn btn-sm"
+            class:btn-primary={positionFilter === "pastor"}
+            class:btn-secondary={positionFilter !== "pastor"}
+            onclick={() => (positionFilter = "pastor")}
+        >
+            목사 ({pastorCount})
+        </button>
+        <button
+            class="btn btn-sm"
+            class:btn-primary={positionFilter === "elder"}
+            class:btn-secondary={positionFilter !== "elder"}
+            onclick={() => (positionFilter = "elder")}
+        >
+            장로 ({elderCount})
+        </button>
+    </div>
+
     <!-- 일괄 투표 권한 설정 버튼 -->
     {#if activeTab === "approved" || activeTab === "all"}
         <div class="flex gap-2 mb-4">
             <button class="btn btn-success btn-sm" onclick={() => setAllCanVote(true)}> 전체 투표 가능 </button>
             <button class="btn btn-secondary btn-sm" onclick={() => setAllCanVote(false)}> 전체 투표 불가 </button>
+        </div>
+    {/if}
+
+    <!-- 일괄 승인 액션 바 (대기 탭에서 선택 시 표시) -->
+    {#if activeTab === "pending" && selectedIds.size > 0}
+        <div class="card mb-4 flex items-center justify-between" style="background: #f0fdf4; border: 2px solid #bbf7d0;">
+            <span class="font-medium text-green-800">{selectedIds.size}명 선택됨</span>
+            <div class="flex gap-2">
+                <button class="btn btn-secondary btn-sm" onclick={() => (selectedIds = new Set())}>
+                    선택 해제
+                </button>
+                <button class="btn btn-success btn-sm" onclick={handleBulkApprove} disabled={bulkApproving}>
+                    {bulkApproving ? "처리 중..." : `✓ ${selectedIds.size}명 일괄 승인`}
+                </button>
+            </div>
         </div>
     {/if}
 
@@ -304,17 +404,44 @@
     {:else}
         <!-- 모바일용 카드 뷰 -->
         <div class="flex flex-col gap-3 md:hidden">
+            {#if activeTab === "pending" && pendingInView.length > 0}
+                <div class="flex items-center gap-3 px-1">
+                    <input
+                        type="checkbox"
+                        id="select-all-mobile"
+                        checked={allPendingSelected}
+                        onchange={toggleSelectAll}
+                        style="width:20px;height:20px;accent-color:var(--color-primary-500);"
+                    />
+                    <label for="select-all-mobile" class="font-medium text-sm cursor-pointer">
+                        전체 선택 ({pendingInView.length}명)
+                    </label>
+                </div>
+            {/if}
             {#each filteredMembers() as member, i}
-                <div class="card animate-fadeIn" style="animation-delay: {i * 0.02}s;">
+                <div
+                    class="card animate-fadeIn"
+                    style="animation-delay: {i * 0.02}s; {selectedIds.has(member.id) ? 'border: 2px solid var(--color-primary-400); background: var(--color-primary-50);' : ''}"
+                >
                     <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="font-bold text-lg">
-                                {member.name}
-                                {#if member.passwordHash === null}
-                                    <span class="badge badge-info ml-2">후보자</span>
-                                {/if}
+                        <div class="flex items-center gap-3">
+                            {#if member.status === "pending" && member.passwordHash !== null}
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.has(member.id)}
+                                    onchange={() => toggleSelect(member.id)}
+                                    style="width:20px;height:20px;accent-color:var(--color-primary-500);flex-shrink:0;"
+                                />
+                            {/if}
+                            <div>
+                                <div class="font-bold text-lg">
+                                    {member.name}
+                                    {#if member.passwordHash === null}
+                                        <span class="badge badge-info ml-2">후보자</span>
+                                    {/if}
+                                </div>
+                                <div class="text-gray-500 text-sm">{member.phone}</div>
                             </div>
-                            <div class="text-gray-500 text-sm">{member.phone}</div>
                         </div>
                         {#if member.passwordHash !== null}
                             {#if member.status === "pending"}
@@ -374,6 +501,16 @@
                 <table>
                     <thead>
                         <tr>
+                            <th style="width:40px;">
+                                {#if activeTab === "pending" && pendingInView.length > 0}
+                                    <input
+                                        type="checkbox"
+                                        checked={allPendingSelected}
+                                        onchange={toggleSelectAll}
+                                        style="width:18px;height:18px;accent-color:var(--color-primary-500);cursor:pointer;"
+                                    />
+                                {/if}
+                            </th>
                             <th>이름</th>
                             <th>전화번호</th>
                             <th>소속교회</th>
@@ -387,7 +524,20 @@
                     </thead>
                     <tbody>
                         {#each filteredMembers() as member, i (member.id)}
-                            <tr class="animate-fadeIn" style="animation-delay: {i * 0.02}s;">
+                            <tr
+                                class="animate-fadeIn"
+                                style="animation-delay: {i * 0.02}s; {selectedIds.has(member.id) ? 'background: var(--color-primary-50);' : ''}"
+                            >
+                                <td>
+                                    {#if member.status === "pending" && member.passwordHash !== null}
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(member.id)}
+                                            onchange={() => toggleSelect(member.id)}
+                                            style="width:18px;height:18px;accent-color:var(--color-primary-500);cursor:pointer;"
+                                        />
+                                    {/if}
+                                </td>
                                 <td class="font-medium">
                                     {member.name}
                                     {#if member.passwordHash === null}
