@@ -465,14 +465,14 @@
 {#if showPreRegisterModal}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
-        class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4"
+        class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
         onclick={(e) => {
             if (e.target === e.currentTarget) showPreRegisterModal = false;
         }}
         role="button"
         tabindex="-1"
     >
-        <div class="card max-w-md w-full animate-fadeIn">
+        <div class="card max-w-md w-full animate-fadeIn my-8 flex-shrink-0">
             <h2 class="text-xl font-bold mb-4">후보자 미리 등록</h2>
             <p class="text-gray-600 text-sm mb-4">
                 미가입 목사/장로를 후보자로 미리 등록합니다. 당사자가 회원가입 시 정식 회원으로 전환됩니다.
