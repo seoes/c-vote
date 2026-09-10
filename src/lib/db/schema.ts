@@ -54,7 +54,6 @@ export const votes = sqliteTable(
         voteType: text("vote_type", { enum: ["pastor", "elder", "general"] }).notNull(),
         maxSelections: integer("max_selections").notNull().default(1),
         resultDisplayCount: integer("result_display_count").notNull().default(10),
-        pin: text("pin").notNull(), // 4자리 PIN
         endTime: integer("end_time", { mode: "timestamp" }).notNull(),
         status: text("status", { enum: ["active", "ended"] })
             .notNull()
@@ -106,6 +105,7 @@ export const voteRecords = sqliteTable(
         votedAt: integer("voted_at", { mode: "timestamp" })
             .notNull()
             .$defaultFn(() => new Date()),
+        isAbstain: integer("is_abstain", { mode: "boolean" }).notNull().default(false),
     },
     (table) => ({
         voteIdx: index("vote_records_vote_idx").on(table.voteId),

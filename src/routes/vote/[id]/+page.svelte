@@ -7,11 +7,9 @@
     const isAdmin = $derived(data.user?.isAdmin ?? false);
 
     // 상태
-    let pinVerified = $state(false);
-    let pinInput = $state("");
-    let pinError = $state("");
     let selectedCandidates = $state<string[]>([]);
     let showConfirmModal = $state(false);
+    let showAbstainModal = $state(false);
     let voteCompleted = $state(false);
     let shuffled = $state(false);
     let displayCandidates = $state<any[]>([]);
@@ -28,18 +26,6 @@
 
     // 투표 진행 중인지 확인
     const isActive = $derived(data.vote?.status === "active" && new Date(data.vote.endTime) > new Date());
-
-    function verifyPin() {
-        if (!data.vote) return;
-        pinError = "";
-
-        if (pinInput !== data.vote.pin) {
-            pinError = "비밀번호가 일치하지 않습니다.";
-            return;
-        }
-
-        pinVerified = true;
-    }
 
     function toggleCandidate(candidateId: string) {
         if (!data.vote) return;
@@ -73,7 +59,11 @@
         showConfirmModal = true;
     }
 
-    async function executeVote() {
+    function confirmAbstain() {
+        showAbstainModal = true;
+    }
+
+    async function executeVote(isAbstain = false) {
         if (!data.vote) return;
 
         try {
@@ -81,8 +71,8 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    pin: pinInput,
-                    selectedCandidateIds: selectedCandidates,
+                    isAbstain,
+                    selectedCandidateIds: isAbstain ? [] : selectedCandidates,
                 }),
             });
 
@@ -90,6 +80,7 @@
 
             if (res.ok) {
                 showConfirmModal = false;
+                showAbstainModal = false;
                 voteCompleted = true;
             } else {
                 alert(result.message || "투표에 실패했습니다.");
@@ -176,50 +167,6 @@
             </div>
         </div>
     </div>
-{:else if !pinVerified}
-    <!-- PIN 입력 화면 -->
-    <div class="page-container">
-        <div class="page-header">
-            <h1 class="page-title">{data.vote.title}</h1>
-            <p class="page-subtitle">{data.vote.description}</p>
-        </div>
-
-        <div class="card card-lg animate-fadeIn">
-            <div class="text-center mb-6">
-                <div class="text-5xl mb-4">🔐</div>
-                <h2 class="text-xl font-bold text-gray-700">투표 비밀번호 입력</h2>
-                <p class="text-gray-500 mt-2">투표에 참여하려면 4자리 비밀번호를 입력하세요</p>
-            </div>
-
-            {#if pinError}
-                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-                    {pinError}
-                </div>
-            {/if}
-
-            <input
-                type="password"
-                class="pin-input"
-                maxlength="4"
-                placeholder="• • • •"
-                bind:value={pinInput}
-                oninput={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    target.value = target.value.replace(/\D/g, "").slice(0, 4);
-                    pinInput = target.value;
-                }}
-                onkeypress={(e) => {
-                    if (e.key === "Enter") verifyPin();
-                }}
-            />
-
-            <button class="btn btn-primary btn-lg btn-full mt-6" onclick={verifyPin} disabled={pinInput.length !== 4}>
-                확인
-            </button>
-
-            <a href="/" class="btn btn-secondary btn-full mt-3">취소</a>
-        </div>
-    </div>
 {:else}
     <!-- 투표 화면 -->
     <div class="page-container page-container-wide">
@@ -285,7 +232,7 @@
             {/each}
         </div>
 
-        <div class="sticky bottom-4">
+        <div class="sticky bottom-4 flex flex-col gap-2">
             <button
                 class="btn btn-primary btn-lg btn-full shadow-lg"
                 onclick={confirmVote}
@@ -297,10 +244,11 @@
                     투표하기 ({selectedCandidates.length}명 선택)
                 {/if}
             </button>
+            <button class="btn btn-secondary btn-lg btn-full" onclick={confirmAbstain}>기권하기</button>
         </div>
     </div>
 
-    <!-- 확인 모달 -->
+    <!-- 투표 확인 모달 -->
     {#if showConfirmModal}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
         <div
@@ -339,7 +287,40 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick={() => (showConfirmModal = false)}>취소</button>
-                    <button class="btn btn-primary" onclick={executeVote}>투표하기</button>
+                    <button class="btn btn-primary" onclick={() => executeVote(false)}>투표하기</button>
+                </div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- 기권 확인 모달 -->
+    {#if showAbstainModal}
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <div
+            class="modal-overlay"
+            onclick={() => (showAbstainModal = false)}
+            onkeydown={(e) => e.key === "Escape" && (showAbstainModal = false)}
+            role="button"
+            tabindex="-1"
+        >
+            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+            <div
+                class="modal animate-fadeIn"
+                onclick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                tabindex="-1"
+            >
+                <div class="modal-header">
+                    <h3 class="modal-title">기권 확인</h3>
+                </div>
+                <div class="modal-body">
+                    <p class="text-gray-600 mb-4">이 투표에서 기권하시겠습니까?</p>
+                    <p class="text-red-600 font-medium text-center">⚠️ 기권은 참여로 기록되며, 이후 수정할 수 없습니다</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick={() => (showAbstainModal = false)}>취소</button>
+                    <button class="btn btn-primary" onclick={() => executeVote(true)}>기권하기</button>
                 </div>
             </div>
         </div>

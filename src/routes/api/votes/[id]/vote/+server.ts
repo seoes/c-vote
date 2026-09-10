@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
     const voteId = params.id;
     const body = await request.json();
 
-    const { pin, selectedCandidateIds } = body;
+    const { selectedCandidateIds, isAbstain } = body;
 
     // 회원 정보 조회 - 투표 권한 확인
     const memberResult = await db.select().from(members).where(eq(members.id, locals.user.id)).limit(1);
@@ -42,24 +42,10 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
 
     const vote = voteResult[0];
 
-    console.log(body);
-    console.log(vote);
-    console.log(pin);
-    console.log(vote.pin);
-    console.log(vote.status);
-    console.log(vote.endTime);
-    console.log(vote.maxSelections);
-    console.log(vote.maxSelections);
-
     // 투표 상태 확인
     const now = new Date();
     if (vote.status === "ended" || vote.endTime <= now) {
         throw error(400, "이미 종료된 투표입니다.");
-    }
-
-    // PIN 확인
-    if (pin !== vote.pin) {
-        throw error(403, "투표 비밀번호가 올바르지 않습니다.");
     }
 
     // 이미 투표했는지 확인
@@ -73,6 +59,21 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
         throw error(400, "이미 투표하셨습니다. 한 번 투표하면 다시 투표할 수 없습니다.");
     }
 
+    const recordId = cuid2();
+    const votedAt = new Date();
+
+    if (isAbstain === true) {
+        await db.insert(voteRecords).values({
+            id: recordId,
+            voteId,
+            memberId: locals.user.id,
+            votedAt,
+            isAbstain: true,
+        });
+
+        return json({ success: true });
+    }
+
     // 선택 수 확인
     if (!selectedCandidateIds || selectedCandidateIds.length === 0) {
         throw error(400, "최소 1명 이상의 후보를 선택해주세요.");
@@ -81,10 +82,6 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
     if (selectedCandidateIds.length > vote.maxSelections) {
         throw error(400, `최대 ${vote.maxSelections}명까지 선택할 수 있습니다.`);
     }
-
-    // 투표 기록 생성
-    const recordId = cuid2();
-    const votedAt = new Date();
 
     // 투표 선택 저장 (감사용)
     const selectionValues = selectedCandidateIds.map((candidateId: string) => ({
@@ -100,6 +97,7 @@ export const POST: RequestHandler = async ({ params, request, platform, locals }
             voteId,
             memberId: locals.user.id,
             votedAt,
+            isAbstain: false,
         }),
         db.insert(voteSelections).values(selectionValues),
     ]);

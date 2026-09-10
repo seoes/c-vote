@@ -67,15 +67,11 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
     const db = getDb(env.DB);
     const body = await request.json();
 
-    const { title, description, voteType, maxSelections, resultDisplayCount, pin, endTime, candidateList } = body;
+    const { title, description, voteType, maxSelections, resultDisplayCount, endTime, candidateList } = body;
 
     // 유효성 검사
-    if (!title?.trim() || !voteType || !pin || !endTime) {
-        throw error(400, "필수 항목이 누락되었습니다. 제목, 투표 종류, PIN, 종료 시간을 확인해주세요.");
-    }
-
-    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        throw error(400, "PIN 번호는 4자리 숫자여야 합니다.");
+    if (!title?.trim() || !voteType || !endTime) {
+        throw error(400, "필수 항목이 누락되었습니다. 제목, 투표 종류, 종료 시간을 확인해주세요.");
     }
 
     if (!["pastor", "elder", "general"].includes(voteType)) {
@@ -92,7 +88,6 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
         voteType,
         maxSelections: maxSelections || 5,
         resultDisplayCount: resultDisplayCount || 10,
-        pin,
         endTime: new Date(endTime),
         status: "active",
     });

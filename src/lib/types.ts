@@ -45,7 +45,6 @@ export interface Vote {
     description: string | null;
     voteType: VoteType;
     maxSelections: number;
-    pin: string;
     endTime: Date;
     status: "active" | "ended";
     createdAt: Date;

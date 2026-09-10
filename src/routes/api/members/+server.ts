@@ -1,7 +1,7 @@
 import type { RequestHandler } from "./$types";
 import { json, error } from "@sveltejs/kit";
 import { getDb, members } from "$lib/db";
-import { eq, desc, or, and, like } from "drizzle-orm";
+import { eq, asc, or, and, like } from "drizzle-orm";
 
 export const GET: RequestHandler = async ({ url, platform, locals }) => {
     // 관리자 권한 확인
@@ -41,7 +41,7 @@ export const GET: RequestHandler = async ({ url, platform, locals }) => {
         .select()
         .from(members)
         .where(and(...conditions))
-        .orderBy(desc(members.createdAt));
+        .orderBy(asc(members.name));
 
     return json(result);
 };

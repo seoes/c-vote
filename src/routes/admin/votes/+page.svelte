@@ -130,9 +130,6 @@
 
                         <div class="flex flex-wrap gap-2 mb-4">
                             <span class="badge badge-info">{getVoteTypeLabel(vote.voteType)}</span>
-                            <span class="text-sm text-gray-500">
-                                PIN: <span class="font-mono font-bold text-primary-600">{vote.pin}</span>
-                            </span>
                         </div>
 
                         <div class="flex flex-wrap gap-2">

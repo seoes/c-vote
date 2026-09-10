@@ -11,7 +11,6 @@
     let voteType = $state<VoteType>("general");
     let maxSelections = $state(5);
     let resultDisplayCount = $state(10);
-    let pin = $state("");
     let endHours = $state(2);
     let selectedMemberIds = $state<string[]>([]);
     let searchQuery = $state("");
@@ -82,10 +81,6 @@
             error = "투표 제목을 입력해주세요.";
             return;
         }
-        if (!pin || pin.length !== 4) {
-            error = "PIN 번호는 4자리 숫자여야 합니다.";
-            return;
-        }
         if (maxSelections < 1) {
             error = "최소 1명 이상 선택 가능해야 합니다.";
             return;
@@ -128,7 +123,6 @@
                 voteType,
                 maxSelections,
                 resultDisplayCount,
-                pin,
                 endTime: endTime.toISOString(),
             };
 
@@ -280,25 +274,6 @@
             </div>
 
             <div class="form-group">
-                <label class="label" for="pin">투표 비밀번호 (4자리 PIN) *</label>
-                <input
-                    type="text"
-                    id="pin"
-                    class="input font-mono text-xl tracking-widest"
-                    style="max-width: 200px;"
-                    maxlength="4"
-                    placeholder="1234"
-                    bind:value={pin}
-                    oninput={(e) => {
-                        const target = e.target as HTMLInputElement;
-                        target.value = target.value.replace(/\D/g, "").slice(0, 4);
-                        pin = target.value;
-                    }}
-                />
-                <p class="text-sm text-gray-500 mt-1">투표 참여 시 입력해야 하는 비밀번호입니다</p>
-            </div>
-
-            <div class="form-group">
                 <label class="label" for="endHours">투표 진행 시간</label>
                 <div class="flex items-center gap-4">
                     <input
@@ -418,10 +393,6 @@
                 <div class="flex justify-between py-3 border-b">
                     <span class="text-gray-500">결과 표시 수</span>
                     <span class="font-medium">{resultDisplayCount}명</span>
-                </div>
-                <div class="flex justify-between py-3 border-b">
-                    <span class="text-gray-500">PIN 번호</span>
-                    <span class="font-mono font-bold text-primary-600">{pin}</span>
                 </div>
                 <div class="flex justify-between py-3 border-b">
                     <span class="text-gray-500">진행 시간</span>

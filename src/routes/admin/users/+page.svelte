@@ -34,6 +34,20 @@
         position: POSITIONS[0] as Position,
     });
 
+    // 회원 수정 모달 상태
+    let showEditModal = $state(false);
+    let editLoading = $state(false);
+    let editError = $state("");
+    let editingMemberId = $state("");
+    let editForm = $state({
+        name: "",
+        phone: "",
+        church: "",
+        region: REGIONS[0],
+        sigchal: SIGCHALS[0] as Sigchal,
+        position: POSITIONS[0] as Position,
+    });
+
     // 후보자 목록 (passwordHash가 null인 계정)
     const preRegisteredMembers = $derived(membersList.filter((m: any) => m.passwordHash === null && !m.isAdmin));
 
@@ -244,6 +258,72 @@
         };
         preRegisterError = "";
         showPreRegisterModal = true;
+    }
+
+    function openEditModal(member: any) {
+        editingMemberId = member.id;
+        editForm = {
+            name: member.name,
+            phone: member.phone,
+            church: member.church,
+            region: member.region,
+            sigchal: member.sigchal,
+            position: member.position || POSITIONS[0],
+        };
+        editError = "";
+        showEditModal = true;
+    }
+
+    function handleEditPhoneInput(e: Event) {
+        const target = e.target as HTMLInputElement;
+        editForm.phone = formatPhone(target.value);
+    }
+
+    async function handleEdit(e: Event) {
+        e.preventDefault();
+        editError = "";
+        editLoading = true;
+
+        if (!editForm.name.trim()) {
+            editError = "성명을 입력해주세요.";
+            editLoading = false;
+            return;
+        }
+        if (!editForm.phone.trim() || editForm.phone.replace(/-/g, "").length < 10) {
+            editError = "전화번호를 정확히 입력해주세요.";
+            editLoading = false;
+            return;
+        }
+        if (!editForm.church.trim()) {
+            editError = "소속교회를 입력해주세요.";
+            editLoading = false;
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/members/${editingMemberId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editForm),
+            });
+
+            const result = await res.json();
+
+            if (!res.ok) {
+                editError = result.message || "회원 정보 수정에 실패했습니다.";
+                editLoading = false;
+                return;
+            }
+
+            membersList = membersList.map((m: any) =>
+                m.id === editingMemberId ? { ...m, ...result.member } : m,
+            );
+            showEditModal = false;
+        } catch (e) {
+            editError = "서버 오류가 발생했습니다.";
+        } finally {
+            editLoading = false;
+        }
     }
 
     async function handlePreRegister(e: Event) {
@@ -487,6 +567,9 @@
                                 ✕ 거절
                             </button>
                         {/if}
+                        <button class="btn btn-secondary btn-sm" onclick={() => openEditModal(member)}>
+                            수정
+                        </button>
                         <button class="btn btn-secondary btn-sm" onclick={() => handleDelete(member.id, member.name)}>
                             삭제
                         </button>
@@ -592,6 +675,12 @@
                                         {/if}
                                         <button
                                             class="btn btn-secondary btn-sm"
+                                            onclick={() => openEditModal(member)}
+                                        >
+                                            수정
+                                        </button>
+                                        <button
+                                            class="btn btn-secondary btn-sm"
                                             onclick={() => handleDelete(member.id, member.name)}
                                         >
                                             삭제
@@ -610,6 +699,93 @@
         <a href="/admin" class="btn btn-secondary">← 대시보드로</a>
     </div>
 </div>
+
+<!-- 회원 수정 모달 -->
+{#if showEditModal}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
+        class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
+        onclick={(e) => {
+            if (e.target === e.currentTarget) showEditModal = false;
+        }}
+        role="button"
+        tabindex="-1"
+    >
+        <div class="card max-w-md w-full animate-fadeIn my-8 flex-shrink-0">
+            <h2 class="text-xl font-bold mb-4">회원 정보 수정</h2>
+
+            {#if editError}
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                    {editError}
+                </div>
+            {/if}
+
+            <form onsubmit={handleEdit}>
+                <div class="form-group">
+                    <label class="label" for="edit-name">성명 *</label>
+                    <input type="text" id="edit-name" class="input" bind:value={editForm.name} />
+                </div>
+
+                <div class="form-group">
+                    <label class="label" for="edit-phone">휴대폰번호 *</label>
+                    <input
+                        type="tel"
+                        id="edit-phone"
+                        class="input"
+                        placeholder="010-0000-0000"
+                        value={editForm.phone}
+                        oninput={handleEditPhoneInput}
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label class="label" for="edit-church">소속교회 *</label>
+                    <input type="text" id="edit-church" class="input" bind:value={editForm.church} />
+                </div>
+
+                <div class="form-group">
+                    <label class="label" for="edit-region">노회</label>
+                    <select id="edit-region" class="select" bind:value={editForm.region}>
+                        {#each REGIONS as r (r)}
+                            <option value={r}>{r}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="label" for="edit-sigchal">소속시찰 *</label>
+                    <select id="edit-sigchal" class="select" bind:value={editForm.sigchal}>
+                        {#each SIGCHALS as s}
+                            <option value={s}>{s}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="label" for="edit-position">직분 *</label>
+                    <select id="edit-position" class="select" bind:value={editForm.position}>
+                        {#each POSITIONS as p}
+                            <option value={p}>{p}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button type="button" class="btn btn-secondary flex-1" onclick={() => (showEditModal = false)}>
+                        취소
+                    </button>
+                    <button type="submit" class="btn btn-primary flex-1" disabled={editLoading}>
+                        {#if editLoading}
+                            저장 중...
+                        {:else}
+                            저장
+                        {/if}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{/if}
 
 <!-- 후보자 미리 등록 모달 -->
 {#if showPreRegisterModal}

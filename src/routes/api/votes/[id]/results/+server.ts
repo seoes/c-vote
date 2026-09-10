@@ -96,28 +96,24 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
     results.sort((a, b) => b.count - a.count);
 
     // 회원별 투표 여부 (모든 회원에게 공개)
-    // 투표한 회원 ID 집합
-    const votedMemberIds = new Set(records.map((r) => r.memberId));
-    const votedAtMap = new Map(records.map((r) => [r.memberId, r.votedAt]));
+    const recordByMemberId = new Map(records.map((r) => [r.memberId, r]));
 
     // canVote가 true인 회원만 투표 여부 표시
     const memberVoteStatus = allMembers
-        .map((m) => ({
-            id: m.id,
-            name: m.name,
-            church: m.church,
-            sigchal: m.sigchal,
-            position: m.position,
-            hasVoted: votedMemberIds.has(m.id),
-            votedAt: locals.user!.isAdmin ? (votedAtMap.get(m.id) || null) : null, // votedAt은 관리자만
-        }))
-        .sort((a, b) => {
-            // 투표한 사람 먼저, 그 다음 이름순
-            if (a.hasVoted !== b.hasVoted) {
-                return a.hasVoted ? -1 : 1;
-            }
-            return a.name.localeCompare(b.name);
-        });
+        .map((m) => {
+            const record = recordByMemberId.get(m.id);
+            return {
+                id: m.id,
+                name: m.name,
+                church: m.church,
+                sigchal: m.sigchal,
+                position: m.position,
+                hasVoted: !!record,
+                isAbstain: record?.isAbstain ?? false,
+                votedAt: locals.user!.isAdmin ? (record?.votedAt || null) : null,
+            };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name, "ko"));
 
     // 진행 중이고 관리자가 아니면 결과 숨김
     const displayResults = isActiveVoting && !locals.user!.isAdmin ? [] : results.slice(0, vote.resultDisplayCount || 10);
