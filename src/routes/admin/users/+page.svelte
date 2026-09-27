@@ -391,18 +391,18 @@
         <button class="tab" class:active={activeTab === "all"} onclick={() => (activeTab = "all")}>
             전체 ({data.members.filter((m: any) => !m.isAdmin).length})
         </button>
-        <button class="tab" class:active={activeTab === "pending"} onclick={() => (activeTab = "pending")}>
-            대기 ({pendingMembers.length})
-        </button>
         <button class="tab" class:active={activeTab === "approved"} onclick={() => (activeTab = "approved")}>
-            승인 ({approvedMembers.filter((m: any) => !m.isAdmin).length})
+            가입자 ({approvedMembers.length})
         </button>
         <button
             class="tab"
             class:active={activeTab === "pre-registered"}
             onclick={() => (activeTab = "pre-registered")}
         >
-            후보자 ({preRegisteredMembers.length})
+            미가입자 ({preRegisteredMembers.length})
+        </button>
+        <button class="tab" class:active={activeTab === "pending"} onclick={() => (activeTab = "pending")}>
+            가입대기자 ({pendingMembers.length})
         </button>
     </div>
 
@@ -517,7 +517,7 @@
                                 <div class="font-bold text-lg">
                                     {member.name}
                                     {#if member.passwordHash === null}
-                                        <span class="badge badge-info ml-2">후보자</span>
+                                        <span class="badge badge-info ml-2">미가입자</span>
                                     {/if}
                                 </div>
                                 <div class="text-gray-500 text-sm">{member.phone}</div>
@@ -532,7 +532,7 @@
                                 <span class="badge badge-danger">거절</span>
                             {/if}
                         {:else}
-                            <span class="badge badge-info">후보자</span>
+                            <span class="badge badge-info">미가입자</span>
                         {/if}
                     </div>
                     <div class="text-sm text-gray-600 mb-1">
@@ -624,7 +624,7 @@
                                 <td class="font-medium">
                                     {member.name}
                                     {#if member.passwordHash === null}
-                                        <span class="text-xs text-blue-600 ml-1">(후보자)</span>
+                                        <span class="text-xs text-blue-600 ml-1">(미가입자)</span>
                                     {/if}
                                 </td>
                                 <td>{member.phone}</td>
@@ -648,7 +648,7 @@
                                 <td class="text-sm text-gray-500">{formatDate(member.createdAt)}</td>
                                 <td>
                                     {#if member.passwordHash === null}
-                                        <span class="badge badge-info">후보자</span>
+                                        <span class="badge badge-info">미가입자</span>
                                     {:else if member.status === "pending"}
                                         <span class="badge badge-warning">대기</span>
                                     {:else if member.status === "approved"}

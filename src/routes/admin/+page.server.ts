@@ -15,9 +15,12 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
     const votesRes = await fetch("/api/votes");
     const votes = votesRes.ok ? await votesRes.json() : [];
 
-    // 통계 계산
-    const pendingMembers = members.filter((m: any) => m.status === "pending");
+    // 통계 계산 (회원 관리 탭과 동일 기준)
     const approvedMembers = members.filter((m: any) => m.status === "approved");
+    const preRegisteredMembers = members.filter((m: any) => m.passwordHash === null);
+    const pendingMembers = members.filter(
+        (m: any) => m.status === "pending" && m.passwordHash !== null,
+    );
     const activeVotes = votes.filter((v: any) => v.status === "active" && new Date(v.endTime) > new Date());
     const endedVotes = votes.filter((v: any) => v.status === "ended" || new Date(v.endTime) <= new Date());
 
@@ -27,6 +30,7 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
         votes,
         pendingMembers,
         approvedMembers,
+        preRegisteredMembers,
         activeVotes,
         endedVotes,
     };
