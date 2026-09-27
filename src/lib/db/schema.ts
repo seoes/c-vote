@@ -133,6 +133,37 @@ export const voteSelections = sqliteTable(
 );
 
 // ============================================
+// Candidate Presets (후보 프리셋)
+// ============================================
+export const candidatePresets = sqliteTable("candidate_presets", {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+        .notNull()
+        .$defaultFn(() => new Date()),
+});
+
+export const candidatePresetMembers = sqliteTable(
+    "candidate_preset_members",
+    {
+        presetId: text("preset_id")
+            .notNull()
+            .references(() => candidatePresets.id, { onDelete: "cascade" }),
+        memberId: text("member_id")
+            .notNull()
+            .references(() => members.id, { onDelete: "cascade" }),
+        order: integer("order").notNull().default(0),
+    },
+    (table) => ({
+        presetMemberIdx: uniqueIndex("candidate_preset_members_preset_member_idx").on(
+            table.presetId,
+            table.memberId,
+        ),
+        presetIdx: index("candidate_preset_members_preset_idx").on(table.presetId),
+    }),
+);
+
+// ============================================
 // Refresh Tokens 테이블 (토큰 갱신용)
 // ============================================
 export const refreshTokens = sqliteTable(
@@ -165,4 +196,8 @@ export type Candidate = typeof candidates.$inferSelect;
 export type NewCandidate = typeof candidates.$inferInsert;
 export type VoteRecord = typeof voteRecords.$inferSelect;
 export type VoteSelection = typeof voteSelections.$inferSelect;
+export type CandidatePreset = typeof candidatePresets.$inferSelect;
+export type NewCandidatePreset = typeof candidatePresets.$inferInsert;
+export type CandidatePresetMember = typeof candidatePresetMembers.$inferSelect;
+export type NewCandidatePresetMember = typeof candidatePresetMembers.$inferInsert;
 export type RefreshToken = typeof refreshTokens.$inferSelect;

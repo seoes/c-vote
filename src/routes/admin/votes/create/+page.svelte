@@ -2,6 +2,7 @@
     import type { PageData } from "./$types";
     import { goto } from "$app/navigation";
     import { VOTE_TYPES, VOTE_TYPE_LABELS, type VoteType } from "$lib/types";
+    import MemberCandidatePicker from "$lib/components/MemberCandidatePicker.svelte";
 
     let { data }: { data: PageData } = $props();
 
@@ -13,7 +14,8 @@
     let resultDisplayCount = $state(10);
     let endHours = $state(2);
     let selectedMemberIds = $state<string[]>([]);
-    let searchQuery = $state("");
+    let selectedPresetId = $state("");
+    let presetApplyNotice = $state("");
 
     let error = $state("");
     let loading = $state(false);
@@ -38,40 +40,33 @@
         return list;
     });
 
-    // 검색 필터링된 회원 목록
-    const filteredMembers = $derived(() => {
-        const candidates = candidateMembers();
-        if (!searchQuery.trim()) return candidates;
-        const query = searchQuery.trim().toLowerCase();
-        return candidates.filter(
-            (m: any) => m.name.toLowerCase().includes(query) || m.church.toLowerCase().includes(query),
-        );
-    });
-
-    // 선택된 회원 목록
-    const selectedMembers = $derived(candidateMembers().filter((m: any) => selectedMemberIds.includes(m.id)));
+    const selectedMembers = $derived(
+        data.approvedMembers.filter((m: any) => selectedMemberIds.includes(m.id)),
+    );
 
     // 투표 유형 변경 시 선택된 후보 초기화
     $effect(() => {
         if (voteType) {
             selectedMemberIds = [];
+            selectedPresetId = "";
+            presetApplyNotice = "";
         }
     });
 
-    function toggleMember(memberId: string) {
-        if (selectedMemberIds.includes(memberId)) {
-            selectedMemberIds = selectedMemberIds.filter((id) => id !== memberId);
-        } else {
-            selectedMemberIds = [...selectedMemberIds, memberId];
+    function applyPreset() {
+        presetApplyNotice = "";
+        if (!selectedPresetId) return;
+
+        const preset = data.presets.find((p: any) => p.id === selectedPresetId);
+        if (!preset?.memberIds?.length) return;
+
+        const poolIds = new Set(candidateMembers().map((m: any) => m.id));
+        const applied = preset.memberIds.filter((id: string) => poolIds.has(id));
+        selectedMemberIds = applied;
+        const excluded = preset.memberIds.length - applied.length;
+        if (excluded > 0) {
+            presetApplyNotice = `${excluded}명은 현재 투표 유형에 포함되지 않아 제외되었습니다.`;
         }
-    }
-
-    function selectAllMembers() {
-        selectedMemberIds = candidateMembers().map((m: any) => m.id);
-    }
-
-    function deselectAllMembers() {
-        selectedMemberIds = [];
     }
 
     function goToStep2() {
@@ -298,68 +293,36 @@
     {:else if step === 2}
         <!-- 2단계: 후보 선택 -->
         <div class="card card-lg animate-fadeIn">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div>
-                    <span class="font-bold text-lg">후보 선택</span>
-                    <span class="ml-2 text-primary-600 font-bold">
-                        ({selectedMemberIds.length}명 선택됨)
-                    </span>
-                </div>
-                <div class="flex gap-2">
-                    <button class="btn btn-primary btn-sm" onclick={selectAllMembers}> ✓ 전체 선택 </button>
-                    <button class="btn btn-secondary btn-sm" onclick={deselectAllMembers}> ✕ 전체 해제 </button>
-                </div>
-            </div>
-
-            <p class="text-gray-500 mb-4">
-                {#if voteType === "pastor"}
-                    목사 직분의 회원({candidateMembers().length}명) 중에서 후보를 선택하세요.
-                {:else if voteType === "elder"}
-                    장로 직분의 회원({candidateMembers().length}명) 중에서 후보를 선택하세요.
-                {:else}
-                    승인된 회원({candidateMembers().length}명) 중에서 후보를 선택하세요.
-                {/if}
-            </p>
-
-            <!-- 검색 -->
-            <input type="text" class="input mb-4" placeholder="🔍 이름 또는 교회로 검색..." bind:value={searchQuery} />
-
-            <!-- 회원 목록 -->
-            <div class="max-h-96 overflow-y-auto border rounded-lg">
-                {#each filteredMembers() as member, i}
-                    {@const isSelected = selectedMemberIds.includes(member.id)}
+            {#if data.presets.length > 0}
+                <div class="flex flex-wrap items-end gap-3 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex-1 min-w-48">
+                        <label class="label" for="presetSelect">후보 프리셋</label>
+                        <select id="presetSelect" class="select" bind:value={selectedPresetId}>
+                            <option value="">프리셋 선택...</option>
+                            {#each data.presets as preset}
+                                <option value={preset.id}>{preset.name} ({preset.memberCount}명)</option>
+                            {/each}
+                        </select>
+                    </div>
                     <button
                         type="button"
-                        class="w-full text-left px-4 py-3 flex items-center gap-3 border-b last:border-b-0 hover:bg-gray-50
-                        {isSelected ? 'bg-primary-50' : ''}"
-                        onclick={() => toggleMember(member.id)}
+                        class="btn btn-secondary"
+                        disabled={!selectedPresetId}
+                        onclick={applyPreset}
                     >
-                        <input
-                            type="checkbox"
-                            checked={isSelected}
-                            class="w-5 h-5 accent-primary-500"
-                            onclick={(e) => e.stopPropagation()}
-                            onchange={() => toggleMember(member.id)}
-                        />
-                        <div class="flex-1">
-                            <div class="font-medium">{member.name}</div>
-                            <div class="text-sm text-gray-500">{member.church} · {member.position}</div>
-                        </div>
+                        프리셋 적용
                     </button>
-                {/each}
-            </div>
-
-            {#if filteredMembers().length === 0}
-                <div class="text-center py-8 text-gray-500">
-                    {#if voteType === "pastor"}
-                        목사 직분의 회원이 없습니다
-                    {:else if voteType === "elder"}
-                        장로 직분의 회원이 없습니다
-                    {:else}
-                        검색 결과가 없습니다
-                    {/if}
                 </div>
+                {#if presetApplyNotice}
+                    <p class="text-sm text-orange-600 mb-4">{presetApplyNotice}</p>
+                {/if}
             {/if}
+
+            <MemberCandidatePicker
+                members={candidateMembers()}
+                {voteType}
+                bind:selectedMemberIds
+            />
 
             <div class="flex gap-3 mt-8">
                 <button class="btn btn-secondary flex-1" onclick={() => (step = 1)}> ← 이전 </button>

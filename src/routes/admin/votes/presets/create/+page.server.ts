@@ -3,21 +3,15 @@ import { redirect } from "@sveltejs/kit";
 import { filterApprovedMembersForCandidates } from "$lib/admin/approvedMembers";
 
 export const load: PageServerLoad = async ({ locals, fetch }) => {
-    // 관리자 권한 확인
     if (!locals.user?.isAdmin) {
         throw redirect(302, locals.user ? "/" : "/login");
     }
 
     const membersRes = await fetch("/api/members");
     const members = membersRes.ok ? await membersRes.json() : [];
-    const approvedMembers = filterApprovedMembersForCandidates(members);
-
-    const presetsRes = await fetch("/api/candidate-presets");
-    const presets = presetsRes.ok ? await presetsRes.json() : [];
 
     return {
         user: locals.user,
-        approvedMembers,
-        presets,
+        approvedMembers: filterApprovedMembersForCandidates(members),
     };
 };
