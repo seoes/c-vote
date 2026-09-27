@@ -8,7 +8,6 @@
         sigchal: string;
         position: string | null;
         hasVoted: boolean;
-        isAbstain: boolean;
         votedAt: Date | null;
     }
 
@@ -40,11 +39,10 @@
     // 탭 상태 - 투표 진행 중이고 관리자가 아니면 투표 현황 탭을 기본으로
     let activeTab = $state<"results" | "voters">((isActiveVoting && !isAdmin) ? "voters" : "results");
 
-    // 투표한 회원 / 기권 / 미투표 필터
-    const votedMembers = $derived(memberVoteStatus.filter((m) => m.hasVoted && !m.isAbstain));
-    const abstainedMembers = $derived(memberVoteStatus.filter((m) => m.isAbstain));
+    // 투표 완료(기권 포함, 구분 없음) / 미투표
+    const votedMembers = $derived(memberVoteStatus.filter((m) => m.hasVoted));
     const notVotedMembers = $derived(memberVoteStatus.filter((m) => !m.hasVoted));
-    const participatedCount = $derived(votedMembers.length + abstainedMembers.length);
+    const participatedCount = $derived(votedMembers.length);
 
     function formatDate(date: Date | string): string {
         const d = new Date(date);
@@ -192,14 +190,10 @@
                 <h2 class="text-xl font-bold mb-6">👥 회원별 투표 현황</h2>
 
                 <!-- 요약 -->
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="text-center p-4 bg-green-50 rounded-lg">
                         <div class="text-2xl font-bold text-green-600">{votedMembers.length}</div>
                         <div class="text-sm text-gray-600">투표 완료</div>
-                    </div>
-                    <div class="text-center p-4 bg-yellow-50 rounded-lg">
-                        <div class="text-2xl font-bold text-yellow-700">{abstainedMembers.length}</div>
-                        <div class="text-sm text-gray-600">기권</div>
                     </div>
                     <div class="text-center p-4 bg-red-50 rounded-lg">
                         <div class="text-2xl font-bold text-red-600">{notVotedMembers.length}</div>
@@ -238,49 +232,6 @@
                                 </thead>
                                 <tbody>
                                     {#each votedMembers as member, i}
-                                        <tr class="border-b hover:bg-gray-50 animate-fadeIn" style="animation-delay: {i * 0.02}s;">
-                                            <td class="p-3 font-medium">{member.name}</td>
-                                            <td class="p-3">{member.church}</td>
-                                            <td class="p-3">{member.sigchal}</td>
-                                            <td class="p-3">{member.position || "-"}</td>
-                                            {#if isAdmin}
-                                                <td class="p-3 text-gray-500">
-                                                    {#if member.votedAt}
-                                                        {formatDate(member.votedAt)}
-                                                    {:else}
-                                                        -
-                                                    {/if}
-                                                </td>
-                                            {/if}
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-                    {/if}
-                </div>
-
-                <!-- 기권 회원 목록 -->
-                <div class="mb-6">
-                    <h3 class="font-bold text-lg mb-3 text-yellow-700">➖ 기권 ({abstainedMembers.length}명)</h3>
-                    {#if abstainedMembers.length === 0}
-                        <p class="text-gray-500 text-sm">기권한 회원이 없습니다.</p>
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="border-b bg-gray-50">
-                                        <th class="text-left p-3">이름</th>
-                                        <th class="text-left p-3">교회</th>
-                                        <th class="text-left p-3">시찰</th>
-                                        <th class="text-left p-3">직분</th>
-                                        {#if isAdmin}
-                                            <th class="text-left p-3">기권 시각</th>
-                                        {/if}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {#each abstainedMembers as member, i}
                                         <tr class="border-b hover:bg-gray-50 animate-fadeIn" style="animation-delay: {i * 0.02}s;">
                                             <td class="p-3 font-medium">{member.name}</td>
                                             <td class="p-3">{member.church}</td>

@@ -109,7 +109,6 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
                 sigchal: m.sigchal,
                 position: m.position,
                 hasVoted: !!record,
-                isAbstain: record?.isAbstain ?? false,
                 votedAt: locals.user!.isAdmin ? (record?.votedAt || null) : null,
             };
         })
