@@ -30,7 +30,7 @@
         "@tailwindcss/vite": "^4.1.14",
         "@types/better-sqlite3": "^7.6.12",
         "@types/node": "^22",
-        "better-sqlite3": "^11.8.1",
+        "better-sqlite3": "^12.11.1",
         "eslint": "^9.38.0",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-svelte": "^3.12.4",
@@ -46,13 +46,6 @@
         "typescript-eslint": "^8.46.1",
         "vite": "^7.1.10",
         "wrangler": "^4.71.0"
-    },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "esbuild",
-            "@tailwindcss/oxide",
-            "better-sqlite3"
-        ]
     },
     "dependencies": {
         "@oslojs/crypto": "^1.0.1",
