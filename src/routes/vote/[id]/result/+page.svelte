@@ -18,6 +18,7 @@
 
     // 전체 참여자 수
     const participantCount = $derived(data.results?.participantCount || 0);
+    const abstainCount = $derived(data.results?.abstainCount ?? 0);
 
     // 최대 득표수 (비율 계산용)
     const maxVotes = $derived(topResults.length > 0 ? topResults[0].count : 1);
@@ -98,6 +99,10 @@
                             {data.totalMembers > 0 ? Math.round((participantCount / data.totalMembers) * 100) : 0}%
                         </div>
                         <div class="text-sm text-gray-500">참여율</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-yellow-700">{abstainCount}</div>
+                        <div class="text-sm text-gray-500">기권자 수</div>
                     </div>
                 </div>
                 {#if !isEnded}

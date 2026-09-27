@@ -32,6 +32,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
     // 참여자 수
     const records = await db.select().from(voteRecords).where(eq(voteRecords.voteId, voteId));
     const participantCount = records.length;
+    const abstainCount = records.filter((r) => r.isAbstain).length;
 
     // 전체 유권자 수 (승인된 회원 중 관리자 제외, canVote가 true인 회원만)
     const allMembers = await db
@@ -128,6 +129,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
             resultDisplayCount: vote.resultDisplayCount || 10,
         },
         participantCount,
+        abstainCount,
         totalVoters,
         participationRate: totalVoters > 0 ? Math.round((participantCount / totalVoters) * 100) : 0,
         results: displayResults,
