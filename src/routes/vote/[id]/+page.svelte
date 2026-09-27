@@ -232,7 +232,7 @@
             {/each}
         </div>
 
-        <div class="sticky bottom-4 flex flex-col gap-2">
+        <div class="sticky-bottom-actions flex flex-col gap-2">
             <button
                 class="btn btn-primary btn-lg btn-full shadow-lg"
                 onclick={confirmVote}

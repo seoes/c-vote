@@ -38,6 +38,10 @@
 }
 
 /* 기본 스타일 */
+:root {
+    --bottom-clearance: 1rem;
+}
+
 html {
     font-size: 18px;
     font-family: var(--font-family-body);
@@ -641,7 +645,18 @@ tr:hover {
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    padding-bottom: var(--bottom-clearance);
     z-index: 1000;
+}
+
+.safe-bottom {
+    padding-bottom: var(--bottom-clearance);
+}
+
+.sticky-bottom-actions {
+    position: sticky;
+    bottom: var(--bottom-clearance);
+    z-index: 20;
 }
 
 .modal {
@@ -649,7 +664,7 @@ tr:hover {
     border-radius: 1rem;
     width: 100%;
     max-width: 480px;
-    max-height: 90vh;
+    max-height: calc(100dvh - var(--bottom-clearance) - 1rem);
     overflow-y: auto;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
 }
@@ -697,5 +712,16 @@ tr:hover {
 
     .candidate-card {
         padding: 1rem;
+    }
+}
+
+/* ponytail: 안드로이드 하단 주소창·제스처 영역은 safe-area에 안 잡히는 경우가 많아 4.5rem을 하한으로 둠. 브라우저가 레이아웃을 줄여 주면 이 값은 줄여도 된다. */
+@media (max-width: 640px), ((hover: none) and (pointer: coarse)) {
+    :root {
+        --bottom-clearance: max(4.5rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
+    }
+
+    .page-container {
+        padding-bottom: var(--bottom-clearance);
     }
 }

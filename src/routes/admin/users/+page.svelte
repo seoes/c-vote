@@ -704,7 +704,7 @@
 {#if showEditModal}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
-        class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
+        class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto safe-bottom"
         onclick={(e) => {
             if (e.target === e.currentTarget) showEditModal = false;
         }}
@@ -791,7 +791,7 @@
 {#if showPreRegisterModal}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
-        class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
+        class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto safe-bottom"
         onclick={(e) => {
             if (e.target === e.currentTarget) showPreRegisterModal = false;
         }}
