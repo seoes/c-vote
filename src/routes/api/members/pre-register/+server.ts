@@ -62,10 +62,10 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
             passwordHash: null, // 비밀번호 없음 - 후보자 계정
             church: church.trim(),
             region: region || REGIONS[0],
-            sigchal: sigchal as typeof SIGCHALS[number],
-            position: position as typeof POSITIONS[number],
+            sigchal: sigchal as (typeof SIGCHALS)[number],
+            position: position as (typeof POSITIONS)[number],
             securityAnswer: null,
-            status: "pending",
+            status: "approved",
             isAdmin: false,
             canVote: false, // 투표 권한 없음
         });
